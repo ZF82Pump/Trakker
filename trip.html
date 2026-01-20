@@ -553,7 +553,6 @@
         const title = e_title.value.trim();
         const adv = e_adventurers.value.trim();
 
-        // Robust date range from flatpickr
         if (!fp) fp = flatpickr(e_dateRange, { mode:"range", dateFormat:"Y-m-d", allowInput:true });
         const dates = fp.selectedDates || [];
         const start = dates[0] ? dates[0].toISOString().slice(0,10) : "";
@@ -589,14 +588,16 @@
 
         setModalStatus("Saving…", false);
 
+        // FIX: single() -> maybeSingle(), and handle "no row returned"
         const { data, error } = await sb
           .from("trips")
           .update(updates)
           .eq("id", currentTrip.id)
-          .select()
-          .single();
+          .select("*")
+          .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error("Update returned no row (check RLS UPDATE policy).");
 
         currentTrip = data;
         renderTrip(currentTrip);
