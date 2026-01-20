@@ -238,7 +238,33 @@
         });
 
         const bg = t.cover_url
-          ? `<div class="bg" style="background-image:url('${String(t.cover_url).replace(/'/g, "%27")}');"></div>`
+        const card = document.createElement("div");
+card.className = "card";
+
+if (t.cover_url) {
+  const bg = document.createElement("div");
+  bg.className = "bg";
+  bg.style.backgroundImage = `url("${t.cover_url}")`; // <-- safe
+  card.appendChild(bg);
+} else {
+  const fb = document.createElement("div");
+  fb.className = "fallback";
+  fb.innerHTML = treeSvg();
+  card.appendChild(fb);
+}
+
+const overlay = document.createElement("div");
+overlay.className = "overlay";
+card.appendChild(overlay);
+
+const meta = document.createElement("div");
+meta.className = "meta";
+meta.innerHTML = `
+  <div class="trip-title">${escapeHtml(title)}</div>
+  <div class="trip-dates">${escapeHtml(dateLine)}</div>
+`;
+card.appendChild(meta);
+
           : `<div class="fallback">${treeSvg()}</div>`;
 
         card.innerHTML = `
@@ -294,3 +320,4 @@
   </script>
 </body>
 </html>
+
