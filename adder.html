@@ -72,11 +72,6 @@
     .status{ font-size:12px; color:var(--text-dim); min-height:16px; }
     .status.error{ color: var(--danger); }
     .save-btn{ border:none; border-radius:14px; padding:12px 16px; cursor:pointer; color:rgba(245,245,245,0.95); background: rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.16); }
-    @media (max-width: 980px){
-      .card-head{ flex-direction:column; }
-      .photo{ min-height:240px; border-right:none; border-bottom:1px solid rgba(255,255,255,0.10); }
-      .grid{ grid-template-columns: 1fr; }
-    }
   </style>
 </head>
 
@@ -91,179 +86,102 @@
       <div class="card-head">
         <div class="photo">
           <div class="photo-inner">
-            <img id="photoPreview" alt="Trip cover preview" />
-            <svg class="tree" viewBox="0 0 128 128" fill="none" aria-hidden="true">
-              <path d="M64 14C54 26 50 36 50 42C50 52 58 60 68 60C78 60 86 52 86 42C86 36 82 26 72 14" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
-              <path d="M64 60C54 60 42 68 42 82C42 96 54 106 64 106C74 106 86 96 86 82C86 68 74 60 64 60Z" stroke="rgba(200,200,200,0.9)" stroke-width="3" />
-              <path d="M64 76V114" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
-              <path d="M55 114H73" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+            <img id="photoPreview" />
+            <svg class="tree" viewBox="0 0 128 128" fill="none">
+              <path d="M64 14C54 26 50 36 50 42C50 52 58 60 68 60C78 60 86 52 86 42C86 36 82 26 72 14" stroke="rgba(200,200,200,0.9)" stroke-width="3"/>
+              <path d="M64 60C54 60 42 68 42 82C42 96 54 106 64 106C74 106 86 96 86 82C86 68 74 60 64 60Z" stroke="rgba(200,200,200,0.9)" stroke-width="3"/>
             </svg>
           </div>
           <div class="photo-overlay"></div>
           <div class="photo-actions">
-            <button class="file-btn" id="pickPhotoBtn" type="button">Add photo</button>
-            <button class="mini-btn" id="removePhotoBtn" type="button">Remove</button>
+            <button class="file-btn" id="pickPhotoBtn">Add photo</button>
+            <button class="mini-btn" id="removePhotoBtn">Remove</button>
             <input class="file-input" id="photoInput" type="file" accept="image/*" />
           </div>
         </div>
 
         <div class="form">
           <div class="hint">Required: Trip title • Adventurers • Time frame</div>
-
           <div class="grid">
-            <div class="field">
-              <label>Trip title *</label>
-              <input id="tripTitle" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label>Adventurers *</label>
-              <input id="adventurers" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field full">
-              <label>Time frame *</label>
-              <input id="dateRange" type="text" autocomplete="off" placeholder="Select departure → return" />
-            </div>
-
-            <div class="field">
-              <label>Miles driven</label>
-              <input id="milesDriven" type="number" min="0" step="1" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label>States checked off</label>
-              <input id="statesChecked" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label>National parks checked off</label>
-              <input id="parksChecked" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label>Favorite meal</label>
-              <input id="favoriteMeal" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label>Favorite song</label>
-              <input id="favoriteSong" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field">
-              <label>New slang</label>
-              <input id="newSlang" type="text" autocomplete="off" />
-            </div>
-
-            <div class="field full">
-              <label>New memory unlocked</label>
-              <textarea id="newMemory" autocomplete="off"></textarea>
-            </div>
+            <div class="field"><label>Trip title *</label><input id="tripTitle"></div>
+            <div class="field"><label>Adventurers *</label><input id="adventurers"></div>
+            <div class="field full"><label>Time frame *</label><input id="dateRange"></div>
+            <div class="field"><label>Miles driven</label><input id="milesDriven" type="number"></div>
+            <div class="field"><label>States checked off</label><input id="statesChecked"></div>
+            <div class="field"><label>National parks checked off</label><input id="parksChecked"></div>
+            <div class="field"><label>Favorite meal</label><input id="favoriteMeal"></div>
+            <div class="field"><label>Favorite song</label><input id="favoriteSong"></div>
+            <div class="field"><label>New slang</label><input id="newSlang"></div>
+            <div class="field full"><label>New memory unlocked</label><textarea id="newMemory"></textarea></div>
           </div>
         </div>
       </div>
 
       <div class="footer">
         <div class="status" id="status"></div>
-        <button class="save-btn" id="saveBtn" type="button">Save trip</button>
+        <button class="save-btn" id="saveBtn">Save trip</button>
       </div>
     </div>
   </div>
 
-  <script>
-    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const fp = flatpickr("#dateRange", { mode:"range", dateFormat:"Y-m-d" });
 
-    // Flatpickr instance
-    window.fp = flatpickr(document.getElementById("dateRange"), { mode:"range", dateFormat:"Y-m-d", allowInput:true });
+let photoFile = null;
+const photoPreview = document.getElementById("photoPreview");
 
-    // Photo preview (upload later)
-    const photoInput = document.getElementById("photoInput");
-    const pickPhotoBtn = document.getElementById("pickPhotoBtn");
-    const removePhotoBtn = document.getElementById("removePhotoBtn");
-    const photoPreview = document.getElementById("photoPreview");
-    let photoFile = null;
+document.getElementById("pickPhotoBtn").onclick = () => photoInput.click();
+photoInput.onchange = () => {
+  photoFile = photoInput.files[0];
+  if (!photoFile) return;
+  photoPreview.src = URL.createObjectURL(photoFile);
+  photoPreview.style.display = "block";
+};
 
-    pickPhotoBtn.addEventListener("click", () => photoInput.click());
-    photoInput.addEventListener("change", () => {
-      const file = photoInput.files && photoInput.files[0];
-      if (!file) return;
-      photoFile = file;
-      const url = URL.createObjectURL(file);
-      photoPreview.src = url;
-      photoPreview.style.display = "block";
-      setStatus("Photo selected (upload later).", false);
+removePhotoBtn.onclick = () => {
+  photoFile = null;
+  photoPreview.style.display = "none";
+};
+
+async function uploadCover(file){
+  if (!file) return null;
+  const ext = file.name.split(".").pop();
+  const path = `covers/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  await sb.storage.from("trip-photos").upload(path, file);
+  return sb.storage.from("trip-photos").getPublicUrl(path).data.publicUrl;
+}
+
+saveBtn.onclick = async () => {
+  try{
+    status.textContent = "Saving…";
+    const [start, end] = fp.selectedDates;
+    if (!start || !end) throw new Error("Pick start and end dates");
+
+    const cover_url = await uploadCover(photoFile);
+
+    const { error } = await sb.from("trips").insert({
+      trip_title: tripTitle.value,
+      adventurers: adventurers.value,
+      start_date: start.toISOString().slice(0,10),
+      end_date: end.toISOString().slice(0,10),
+      miles_driven: milesDriven.value || null,
+      states_checked: statesChecked.value || null,
+      parks_checked: parksChecked.value || null,
+      favorite_meal: favoriteMeal.value || null,
+      favorite_song: favoriteSong.value || null,
+      new_slang: newSlang.value || null,
+      new_memory_unlocked: newMemory.value || null,
+      cover_url
     });
-    removePhotoBtn.addEventListener("click", () => {
-      photoFile = null;
-      photoInput.value = "";
-      if (photoPreview.src) URL.revokeObjectURL(photoPreview.src);
-      photoPreview.removeAttribute("src");
-      photoPreview.style.display = "none";
-      setStatus("Photo removed.", false);
-    });
 
-    const statusEl = document.getElementById("status");
-    function setStatus(msg, isError=false){
-      statusEl.textContent = msg || "";
-      statusEl.classList.toggle("error", !!isError);
-    }
-    function numberOrNull(v){
-      const t = String(v ?? "").trim();
-      if (!t) return null;
-      const n = Number(t);
-      return Number.isFinite(n) ? Math.round(n) : null;
-    }
-
-    document.getElementById("saveBtn").addEventListener("click", async () => {
-      try{
-        setStatus("Checking…", false);
-
-        const tripTitle = document.getElementById("tripTitle").value.trim();
-        const adventurers = document.getElementById("adventurers").value.trim();
-
-        const dates = (window.fp && fp.selectedDates) ? fp.selectedDates : [];
-        const start = dates[0] ? dates[0].toISOString().slice(0,10) : "";
-        const end   = dates[1] ? dates[1].toISOString().slice(0,10) : "";
-
-        if (!tripTitle) return setStatus("Trip title is required.", true);
-        if (!adventurers) return setStatus("Adventurers is required.", true);
-        if (!start || !end) return setStatus("Time frame is required (pick 2 dates).", true);
-
-        const payload = {
-          trip_title: tripTitle,
-          adventurers,
-          start_date: start,
-          end_date: end,
-          miles_driven: numberOrNull(document.getElementById("milesDriven").value),
-          states_checked: document.getElementById("statesChecked").value.trim() || null,
-          parks_checked: document.getElementById("parksChecked").value.trim() || null,
-          favorite_meal: document.getElementById("favoriteMeal").value.trim() || null,
-          favorite_song: document.getElementById("favoriteSong").value.trim() || null,
-          new_slang: document.getElementById("newSlang").value.trim() || null,
-          new_memory_unlocked: document.getElementById("newMemory").value.trim() || null
-        };
-
-        setStatus("Saving…", false);
-        const { error } = await sb.from("trips").insert(payload);
-        if (error) throw error;
-
-        setStatus("Saved.", false);
-
-        document.getElementById("tripTitle").value = "";
-        document.getElementById("adventurers").value = "";
-        fp.clear();
-        document.getElementById("milesDriven").value = "";
-        document.getElementById("statesChecked").value = "";
-        document.getElementById("parksChecked").value = "";
-        document.getElementById("favoriteMeal").value = "";
-        document.getElementById("favoriteSong").value = "";
-        document.getElementById("newSlang").value = "";
-        document.getElementById("newMemory").value = "";
-      }catch(e){
-        setStatus("Save failed: " + (e?.message || e), true);
-      }
-    });
-  </script>
+    if (error) throw error;
+    status.textContent = "Saved ✔";
+  } catch(e){
+    status.textContent = e.message;
+    status.classList.add("error");
+  }
+};
+</script>
 </body>
 </html>
