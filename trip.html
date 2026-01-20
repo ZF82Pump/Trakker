@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Adventure Trakker — Trip</title>
 
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/Trakker/supabase-config.js"></script>
 
@@ -45,6 +48,10 @@
       text-decoration:none; display:inline-flex; align-items:center; gap:10px;
       font-weight:300; font-size:13px;
     }
+    .btn.danger{
+      background: rgba(255,120,120,0.12);
+      border: 1px solid rgba(255,120,120,0.22);
+    }
 
     .hero{
       border-radius: 18px;
@@ -82,6 +89,7 @@
       flex-direction:column;
       gap: 6px;
       z-index: 2;
+      width: 100%;
     }
     .cover-title{
       font-size: 22px;
@@ -130,6 +138,102 @@
 
     .status{ font-size: 12px; opacity: 0.75; min-height: 16px; }
     .status.error{ color: var(--danger); opacity: 1; }
+
+    /* Modal */
+    .modal{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+      z-index: 999;
+    }
+    .modal.open{ display:flex; }
+    .modal-card{
+      width: min(920px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(20,20,20,0.92);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+      overflow:hidden;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 14px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .modal-head h2{
+      margin:0;
+      font-weight:300;
+      letter-spacing:0.04em;
+      font-size: 16px;
+      color: rgba(245,245,245,0.9);
+    }
+    .modal-body{
+      padding: 14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      min-width: 0;
+    }
+    .full{ grid-column: 1 / -1; }
+    label{
+      font-size: 12px;
+      opacity: 0.75;
+      font-weight:300;
+      color: rgba(245,245,245,0.85);
+    }
+    input, textarea{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.25);
+      padding: 10px 12px;
+      color: rgba(245,245,245,0.92);
+      font-size: 13px;
+      outline: none;
+      box-sizing:border-box;
+    }
+    textarea{ resize:vertical; min-height: 64px; }
+
+    .modal-foot{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    .modal-status{
+      font-size: 12px;
+      opacity: 0.75;
+      min-height: 16px;
+    }
+    .modal-status.error{ color: var(--danger); opacity: 1; }
+
+    .file-row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .file-input{ display:none; }
+
+    @media (max-width: 760px){
+      .grid{ grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 
@@ -137,16 +241,18 @@
   <div class="wrap">
     <div class="topbar">
       <h1 class="title">Trip</h1>
-      <div style="display:flex; gap:10px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a class="btn" href="/Trakker/trips.html">Back</a>
         <a class="btn" href="/Trakker/index.html">Home</a>
+        <button class="btn" id="editBtn" type="button">Edit</button>
+        <button class="btn danger" id="deleteBtn" type="button">Delete</button>
       </div>
     </div>
 
     <div class="status" id="status"></div>
 
     <div class="hero">
-      <div class="cover" id="cover">
+      <div class="cover">
         <img id="coverImg" alt="" />
         <div class="cover-overlay"></div>
         <div class="cover-meta">
@@ -155,8 +261,80 @@
         </div>
       </div>
 
-      <div class="body" id="details">
-        <!-- filled by JS -->
+      <div class="body" id="details"></div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Edit trip</h2>
+        <button class="btn" id="closeModalBtn" type="button">Close</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid">
+          <div class="field">
+            <label>Trip title *</label>
+            <input id="e_title" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Adventurers *</label>
+            <input id="e_adventurers" type="text" autocomplete="off">
+          </div>
+
+          <div class="field full">
+            <label>Time frame *</label>
+            <input id="e_dateRange" type="text" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label>Miles driven</label>
+            <input id="e_miles" type="number" min="0" step="1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>States checked off</label>
+            <input id="e_states" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>National parks checked off</label>
+            <input id="e_parks" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Favorite meal</label>
+            <input id="e_meal" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Favorite song</label>
+            <input id="e_song" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>New slang</label>
+            <input id="e_slang" type="text" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label>New memory unlocked</label>
+            <textarea id="e_memory" autocomplete="off"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Cover photo</label>
+            <div class="file-row">
+              <button class="btn" id="pickCoverBtn" type="button">Replace photo</button>
+              <button class="btn danger" id="removeCoverBtn" type="button">Remove photo</button>
+              <input class="file-input" id="coverFile" type="file" accept="image/*">
+            </div>
+            <div style="font-size:12px; opacity:0.75; margin-top:6px;">
+              Replace uploads a new image and updates the trip. Remove clears the cover URL.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="modal-status" id="modalStatus"></div>
+        <button class="btn" id="saveEditBtn" type="button">Save changes</button>
       </div>
     </div>
   </div>
@@ -165,14 +343,47 @@
     const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
     const statusEl = document.getElementById("status");
-    const coverImg = document.getElementById("coverImg");
     const titleEl = document.getElementById("title");
     const datesEl = document.getElementById("dates");
+    const coverImg = document.getElementById("coverImg");
     const detailsEl = document.getElementById("details");
+
+    const modal = document.getElementById("modal");
+    const modalStatus = document.getElementById("modalStatus");
+
+    const editBtn = document.getElementById("editBtn");
+    const deleteBtn = document.getElementById("deleteBtn");
+
+    const e_title = document.getElementById("e_title");
+    const e_adventurers = document.getElementById("e_adventurers");
+    const e_dateRange = document.getElementById("e_dateRange");
+    const e_miles = document.getElementById("e_miles");
+    const e_states = document.getElementById("e_states");
+    const e_parks = document.getElementById("e_parks");
+    const e_meal = document.getElementById("e_meal");
+    const e_song = document.getElementById("e_song");
+    const e_slang = document.getElementById("e_slang");
+    const e_memory = document.getElementById("e_memory");
+
+    const pickCoverBtn = document.getElementById("pickCoverBtn");
+    const removeCoverBtn = document.getElementById("removeCoverBtn");
+    const coverFile = document.getElementById("coverFile");
+
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const saveEditBtn = document.getElementById("saveEditBtn");
+
+    let fp = null;
+    let currentTrip = null;
+    let pendingCoverFile = null;
+    let removeCover = false;
 
     function setStatus(msg, isError=false){
       statusEl.textContent = msg || "";
       statusEl.classList.toggle("error", !!isError);
+    }
+    function setModalStatus(msg, isError=false){
+      modalStatus.textContent = msg || "";
+      modalStatus.classList.toggle("error", !!isError);
     }
 
     function fmtDate(isoDate){
@@ -202,6 +413,102 @@
       return p.get("id");
     }
 
+    function openModal(){
+      modal.classList.add("open");
+      setModalStatus("", false);
+      pendingCoverFile = null;
+      removeCover = false;
+
+      if (!fp){
+        fp = flatpickr(e_dateRange, { mode:"range", dateFormat:"Y-m-d", allowInput:true });
+      }
+    }
+    function closeModal(){
+      modal.classList.remove("open");
+    }
+
+    closeModalBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    pickCoverBtn.addEventListener("click", () => coverFile.click());
+    coverFile.addEventListener("change", () => {
+      const f = coverFile.files && coverFile.files[0];
+      if (!f) return;
+      pendingCoverFile = f;
+      removeCover = false;
+      setModalStatus("New cover selected (will upload on Save).", false);
+    });
+
+    removeCoverBtn.addEventListener("click", () => {
+      pendingCoverFile = null;
+      removeCover = true;
+      coverFile.value = "";
+      setModalStatus("Cover will be removed on Save.", false);
+    });
+
+    async function uploadCoverPhoto(file){
+      if (!file) return null;
+
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const filename = `${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+      const path = `covers/${filename}`;
+
+      const { error: upErr } = await sb.storage
+        .from("trip-photos")
+        .upload(path, file, { upsert: false, contentType: file.type });
+
+      if (upErr) throw upErr;
+
+      const { data } = sb.storage.from("trip-photos").getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    function fillEditForm(t){
+      e_title.value = t.trip_title || "";
+      e_adventurers.value = t.adventurers || "";
+
+      const s = t.start_date || "";
+      const e = t.end_date || "";
+      e_dateRange.value = (s && e) ? `${s} to ${e}` : "";
+
+      e_miles.value = t.miles_driven ?? "";
+      e_states.value = t.states_checked ?? "";
+      e_parks.value = t.parks_checked ?? "";
+      e_meal.value = t.favorite_meal ?? "";
+      e_song.value = t.favorite_song ?? "";
+      e_slang.value = t.new_slang ?? "";
+      e_memory.value = t.new_memory_unlocked ?? "";
+
+      if (fp){
+        fp.setDate([s, e], true, "Y-m-d");
+      }
+    }
+
+    function renderTrip(t){
+      titleEl.textContent = t.trip_title || "Untitled";
+      datesEl.textContent = `${fmtDate(t.start_date)} → ${fmtDate(t.end_date)}`;
+
+      if (t.cover_url){
+        coverImg.src = t.cover_url;
+        coverImg.style.display = "block";
+      } else {
+        coverImg.removeAttribute("src");
+        coverImg.style.display = "none";
+      }
+
+      detailsEl.innerHTML = "";
+      detailsEl.appendChild(item("Adventurers", t.adventurers));
+      detailsEl.appendChild(item("Miles driven", t.miles_driven != null ? String(t.miles_driven) : ""));
+      detailsEl.appendChild(item("States checked off", t.states_checked));
+      detailsEl.appendChild(item("National parks checked off", t.parks_checked));
+      detailsEl.appendChild(item("Favorite meal", t.favorite_meal));
+      detailsEl.appendChild(item("Favorite song", t.favorite_song));
+      detailsEl.appendChild(item("New slang", t.new_slang));
+      detailsEl.appendChild(item("New memory unlocked", t.new_memory_unlocked));
+    }
+
     async function loadTrip(){
       const id = getTripId();
       if (!id){
@@ -227,25 +534,101 @@
       }
 
       setStatus("", false);
-
-      titleEl.textContent = data.trip_title || "Untitled";
-      datesEl.textContent = `${fmtDate(data.start_date)} → ${fmtDate(data.end_date)}`;
-
-      if (data.cover_url){
-        coverImg.src = data.cover_url;
-        coverImg.style.display = "block";
-      }
-
-      detailsEl.innerHTML = "";
-      detailsEl.appendChild(item("Adventurers", data.adventurers));
-      detailsEl.appendChild(item("Miles driven", data.miles_driven != null ? String(data.miles_driven) : ""));
-      detailsEl.appendChild(item("States checked off", data.states_checked));
-      detailsEl.appendChild(item("National parks checked off", data.parks_checked));
-      detailsEl.appendChild(item("Favorite meal", data.favorite_meal));
-      detailsEl.appendChild(item("Favorite song", data.favorite_song));
-      detailsEl.appendChild(item("New slang", data.new_slang));
-      detailsEl.appendChild(item("New memory unlocked", data.new_memory_unlocked));
+      currentTrip = data;
+      renderTrip(currentTrip);
     }
+
+    editBtn.addEventListener("click", () => {
+      if (!currentTrip) return;
+      openModal();
+      fillEditForm(currentTrip);
+    });
+
+    saveEditBtn.addEventListener("click", async () => {
+      try{
+        if (!currentTrip) return;
+
+        setModalStatus("Checking…", false);
+
+        const title = e_title.value.trim();
+        const adv = e_adventurers.value.trim();
+
+        // Robust date range from flatpickr
+        if (!fp) fp = flatpickr(e_dateRange, { mode:"range", dateFormat:"Y-m-d", allowInput:true });
+        const dates = fp.selectedDates || [];
+        const start = dates[0] ? dates[0].toISOString().slice(0,10) : "";
+        const end   = dates[1] ? dates[1].toISOString().slice(0,10) : "";
+
+        if (!title) return setModalStatus("Trip title is required.", true);
+        if (!adv) return setModalStatus("Adventurers is required.", true);
+        if (!start || !end) return setModalStatus("Time frame is required (pick 2 dates).", true);
+
+        let coverUrl = currentTrip.cover_url || null;
+
+        if (removeCover){
+          coverUrl = null;
+        } else if (pendingCoverFile){
+          setModalStatus("Uploading photo…", false);
+          coverUrl = await uploadCoverPhoto(pendingCoverFile);
+        }
+
+        const updates = {
+          trip_title: title,
+          adventurers: adv,
+          start_date: start,
+          end_date: end,
+          miles_driven: e_miles.value ? Number(e_miles.value) : null,
+          states_checked: e_states.value.trim() || null,
+          parks_checked: e_parks.value.trim() || null,
+          favorite_meal: e_meal.value.trim() || null,
+          favorite_song: e_song.value.trim() || null,
+          new_slang: e_slang.value.trim() || null,
+          new_memory_unlocked: e_memory.value.trim() || null,
+          cover_url: coverUrl
+        };
+
+        setModalStatus("Saving…", false);
+
+        const { data, error } = await sb
+          .from("trips")
+          .update(updates)
+          .eq("id", currentTrip.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        currentTrip = data;
+        renderTrip(currentTrip);
+
+        setModalStatus("Saved.", false);
+        closeModal();
+      }catch(e){
+        setModalStatus("Save failed: " + (e?.message || e), true);
+      }
+    });
+
+    deleteBtn.addEventListener("click", async () => {
+      try{
+        if (!currentTrip) return;
+
+        const ok = confirm("Delete this trip? This cannot be undone.");
+        if (!ok) return;
+
+        setStatus("Deleting…", false);
+
+        const { error } = await sb
+          .from("trips")
+          .delete()
+          .eq("id", currentTrip.id);
+
+        if (error) throw error;
+
+        window.location.href = "/Trakker/trips.html";
+      }catch(e){
+        setStatus("Delete failed: " + (e?.message || e), true);
+      }
+    });
 
     loadTrip();
   </script>
