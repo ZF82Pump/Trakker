@@ -9,6 +9,10 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+
   <style>
     :root{
       --header-color: rgba(180, 180, 180, 0.92);
@@ -16,7 +20,9 @@
       --glass-bg-strong: rgba(255, 255, 255, 0.28);
       --glass-border: rgba(255, 255, 255, 0.22);
       --text-soft: rgba(245, 245, 245, 0.88);
+      --text-dim: rgba(245, 245, 245, 0.70);
       --shadow: 0 14px 30px rgba(0,0,0,0.25);
+      --danger: rgba(255,120,120,0.92);
     }
 
     html, body{
@@ -27,14 +33,12 @@
       overflow:hidden;
     }
 
-    /* Full-screen map */
     #map{
       position:fixed;
       inset:0;
       z-index:0;
     }
 
-    /* Dim map */
     .map-dimmer{
       position:fixed;
       inset:0;
@@ -43,7 +47,6 @@
       pointer-events:none;
     }
 
-    /* Vignette */
     .vignette{
       position:fixed;
       inset:-40px;
@@ -56,7 +59,6 @@
           rgba(0,0,0,0.55) 100%);
     }
 
-    /* UI overlay */
     .ui{
       position:fixed;
       inset:0;
@@ -66,7 +68,6 @@
       pointer-events:none;
     }
 
-    /* Header */
     .header{
       padding: 34px 18px 0;
       text-align:center;
@@ -81,7 +82,6 @@
       text-shadow:0 10px 26px rgba(0,0,0,0.35);
     }
 
-    /* Right panel */
     .right-panel-wrap{
       position:fixed;
       top:110px;
@@ -107,6 +107,10 @@
     .rp-head{
       padding:14px;
       border-bottom:1px solid rgba(255,255,255,0.14);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
     }
     .rp-head h2{
       margin:0;
@@ -115,6 +119,14 @@
       letter-spacing:0.04em;
       color:var(--text-soft);
     }
+    .rp-status{
+      font-size:12px;
+      font-weight:300;
+      color: var(--text-dim);
+      min-height: 14px;
+      text-align:right;
+    }
+    .rp-status.error{ color: var(--danger); }
 
     .rp-body{
       padding:12px;
@@ -142,8 +154,22 @@
       font-size:12px;
       color:rgba(255,255,255,0.75);
     }
+    .trip-mini{
+      font-size:12px;
+      color:rgba(255,255,255,0.70);
+      line-height:1.35;
+    }
 
-    /* Bottom buttons */
+    .empty{
+      border-radius:14px;
+      background:rgba(0,0,0,0.18);
+      border:1px solid rgba(255,255,255,0.10);
+      padding: 12px;
+      color: rgba(255,255,255,0.70);
+      font-size: 12px;
+      font-weight: 300;
+    }
+
     .bottom-actions{
       margin-top:auto;
       padding:0 18px 26px;
@@ -191,20 +217,10 @@
     <div class="right-panel">
       <div class="rp-head">
         <h2>Upcoming trips</h2>
+        <div class="rp-status" id="rpStatus"></div>
       </div>
-      <div class="rp-body">
-        <div class="trip-card">
-          <div class="trip-title">Smoky Mountains Weekend</div>
-          <div class="trip-date">Feb 6, 2026</div>
-        </div>
-        <div class="trip-card">
-          <div class="trip-title">Chicago Food Run</div>
-          <div class="trip-date">Mar 14, 2026</div>
-        </div>
-        <div class="trip-card">
-          <div class="trip-title">Niagara + Toronto</div>
-          <div class="trip-date">May 1, 2026</div>
-        </div>
+      <div class="rp-body" id="upcomingList">
+        <!-- injected -->
       </div>
     </div>
   </div>
@@ -223,11 +239,27 @@
   </div>
 
   <script>
-    // ---- Map ----
+    // ---- Background map (STATIC) ----
     const map = L.map('map', {
       zoomControl:false,
-      attributionControl:true
+      attributionControl:true,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false,
+      touchZoom: false
     });
+
+    // If Leaflet still attaches handlers, explicitly disable them:
+    map.dragging.disable();
+    map.scrollWheelZoom.disable();
+    map.doubleClickZoom.disable();
+    map.boxZoom.disable();
+    map.keyboard.disable();
+    if (map.tap) map.tap.disable();
+    map.touchZoom.disable();
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom:19,
@@ -239,17 +271,108 @@
       L.latLng(58, -52)
     );
     map.fitBounds(northAmericaBounds);
-    map.scrollWheelZoom.disable();
 
     // ---- Navigation ----
     document.getElementById('addTripBtn').addEventListener('click', () => {
       window.location.href = "adder.html";
     });
-
     document.getElementById('viewTripsBtn').addEventListener('click', () => {
-      // next page we build
       window.location.href = "trips.html";
     });
+
+    // ---- Supabase upcoming trips ----
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const upcomingList = document.getElementById("upcomingList");
+    const rpStatus = document.getElementById("rpStatus");
+
+    function setRpStatus(msg, isError=false){
+      rpStatus.textContent = msg || "";
+      rpStatus.classList.toggle("error", !!isError);
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+      }[c]));
+    }
+
+    function fmtDate(iso){
+      if (!iso) return "";
+      const d = new Date(String(iso) + "T00:00:00");
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    async function ensureSignedInSilent(){
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) return session;
+
+      // Keep the home page minimal: don't force login.
+      // Show a subtle hint instead.
+      setRpStatus("Sign in to load", false);
+      return null;
+    }
+
+    function renderUpcoming(trips){
+      upcomingList.innerHTML = "";
+
+      if (!trips.length){
+        upcomingList.innerHTML = `<div class="empty">No upcoming trips.</div>`;
+        return;
+      }
+
+      for (const t of trips){
+        const title = t.trip_title || "Untitled";
+        const dateLine = `${fmtDate(t.start_date)} → ${fmtDate(t.end_date)}`;
+        const mini = (t.new_memory_unlocked || t.adventurers || "").trim();
+
+        const card = document.createElement("div");
+        card.className = "trip-card";
+        card.innerHTML = `
+          <div class="trip-title">${escapeHtml(title)}</div>
+          <div class="trip-date">${escapeHtml(dateLine)}</div>
+          ${mini ? `<div class="trip-mini">${escapeHtml(mini)}</div>` : ``}
+        `;
+        upcomingList.appendChild(card);
+      }
+    }
+
+    async function loadUpcomingTrips(){
+      setRpStatus("Loading…", false);
+
+      const session = await ensureSignedInSilent();
+      if (!session){
+        // If not signed in, show none (or you can show localStorage fallback)
+        renderUpcoming([]);
+        return;
+      }
+
+      // Upcoming = start_date >= today, order by soonest, limit 3
+      const today = new Date().toISOString().slice(0,10);
+
+      const { data, error } = await sb
+        .from("trips")
+        .select("id, trip_title, adventurers, start_date, end_date, new_memory_unlocked")
+        .gte("start_date", today)
+        .order("start_date", { ascending: true })
+        .limit(3);
+
+      if (error){
+        setRpStatus("Couldn’t load", true);
+        renderUpcoming([]);
+        return;
+      }
+
+      setRpStatus("", false);
+      renderUpcoming(data || []);
+    }
+
+    // Optional: allow home page to "just work" after magic-link sign-in
+    sb.auth.onAuthStateChange((_event, _session) => {
+      loadUpcomingTrips();
+    });
+
+    loadUpcomingTrips();
   </script>
 </body>
 </html>
