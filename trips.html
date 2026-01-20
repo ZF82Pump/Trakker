@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adventure Trakker — Trips</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/Trakker/supabase-config.js"></script>
+
+  <style>
+    :root{
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 14px 30px rgba(0,0,0,0.30);
+      --bg: #0b0b0b;
+      --danger: rgba(255,120,120,0.92);
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(ellipse at top, rgba(255,255,255,0.05), rgba(0,0,0,0.0) 55%), var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    .wrap{ max-width: 1200px; margin: 0 auto; padding: 22px 16px 44px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom:16px;
+    }
+    .title{
+      margin:0; font-weight:300; letter-spacing:0.06em;
+      color:var(--muted); font-size:clamp(24px, 2.6vw, 32px);
+      user-select:none;
+    }
+    .actions{ display:flex; gap:10px; align-items:center; }
+    .btn{
+      border:none; border-radius:14px; padding:10px 12px;
+      cursor:pointer; color:var(--text);
+      background: var(--panel); border:1px solid var(--border);
+      box-shadow: var(--shadow);
+      text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+      font-weight:300; font-size:13px;
+    }
+
+    .subrow{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin: 10px 0 18px;
+    }
+    .status{ font-size:12px; color: rgba(245,245,245,0.70); min-height:16px; }
+    .status.error{ color: var(--danger); }
+
+    .search{
+      width: min(420px, 100%);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.20);
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--text);
+      outline:none;
+      box-sizing:border-box;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:12px;
+    }
+    @media (max-width: 1100px){ .grid{ grid-template-columns: repeat(3, 1fr);} }
+    @media (max-width: 840px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
+    @media (max-width: 520px){ .grid{ grid-template-columns: 1fr;} }
+
+    /* Minimal cover-as-background card */
+    .card{
+      position: relative;
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      height: 240px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.08);
+      transform: translateY(0);
+      transition: transform 120ms ease, opacity 120ms ease;
+    }
+    .card:hover{ transform: translateY(-1px); }
+    .card:active{ transform: translateY(0); opacity: 0.92; }
+
+    .bg{
+      position:absolute; inset:0;
+      background-size: cover;
+      background-position: center;
+      background-repeat:no-repeat;
+      filter: none;
+    }
+
+    /* fallback tree for no photo */
+    .fallback{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.18);
+    }
+    .tree{ width:76px; height:76px; opacity:0.52; }
+
+    /* minimal overlay for readability */
+    .overlay{
+      position:absolute; inset:0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.15) 0%,
+        rgba(0,0,0,0.10) 45%,
+        rgba(0,0,0,0.55) 100%);
+      pointer-events:none;
+    }
+
+    .meta{
+      position:absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      pointer-events:none;
+    }
+    .trip-title{
+      font-size: 15px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 10px 22px rgba(0,0,0,0.45);
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+    }
+    .trip-dates{
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.78);
+      text-shadow: 0 10px 22px rgba(0,0,0,0.45);
+    }
+
+    .empty{
+      margin-top: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      padding: 18px;
+      color: rgba(245,245,245,0.70);
+      font-weight: 300;
+      box-shadow: var(--shadow);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1 class="title">Trips</h1>
+      <div class="actions">
+        <a class="btn" href="/Trakker/index.html">Home</a>
+        <a class="btn" href="/Trakker/adder.html">Add</a>
+      </div>
+    </div>
+
+    <div class="subrow">
+      <div class="status" id="status"></div>
+      <input class="search" id="search" type="text" placeholder="Search trips…" />
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" style="display:none;">No trips yet.</div>
+  </div>
+
+  <script>
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const statusEl = document.getElementById("status");
+    const gridEl = document.getElementById("grid");
+    const emptyEl = document.getElementById("empty");
+    const searchEl = document.getElementById("search");
+
+    let allTrips = [];
+
+    function setStatus(msg, isError=false){
+      statusEl.textContent = msg || "";
+      statusEl.classList.toggle("error", !!isError);
+    }
+
+    function fmtDate(isoDate){
+      if (!isoDate) return "";
+      const d = new Date(String(isoDate) + "T00:00:00");
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    function treeSvg(){
+      return `
+        <svg class="tree" viewBox="0 0 128 128" fill="none" aria-hidden="true">
+          <path d="M64 14C54 26 50 36 50 42C50 52 58 60 68 60C78 60 86 52 86 42C86 36 82 26 72 14"
+            stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M64 60C54 60 42 68 42 82C42 96 54 106 64 106C74 106 86 96 86 82C86 68 74 60 64 60Z"
+            stroke="rgba(200,200,200,0.9)" stroke-width="3" />
+          <path d="M64 76V114" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+          <path d="M55 114H73" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      `;
+    }
+
+    function goTrip(id){
+      window.location.href = `/Trakker/trip.html?id=${encodeURIComponent(id)}`;
+    }
+
+    function render(trips){
+      gridEl.innerHTML = "";
+      emptyEl.style.display = trips.length ? "none" : "block";
+
+      for (const t of trips){
+        const title = t.trip_title || "Untitled";
+        const dateLine = `${fmtDate(t.start_date)} → ${fmtDate(t.end_date)}`;
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", `Open trip: ${title}`);
+
+        card.addEventListener("click", () => goTrip(t.id));
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") goTrip(t.id);
+        });
+
+        const bg = t.cover_url
+          ? `<div class="bg" style="background-image:url('${String(t.cover_url).replace(/'/g, "%27")}');"></div>`
+          : `<div class="fallback">${treeSvg()}</div>`;
+
+        card.innerHTML = `
+          ${bg}
+          <div class="overlay"></div>
+          <div class="meta">
+            <div class="trip-title">${escapeHtml(title)}</div>
+            <div class="trip-dates">${escapeHtml(dateLine)}</div>
+          </div>
+        `;
+
+        gridEl.appendChild(card);
+      }
+    }
+
+    function applySearch(){
+      const q = searchEl.value.trim().toLowerCase();
+      if (!q) return render(allTrips);
+
+      const filtered = allTrips.filter(t => {
+        const hay = [
+          t.trip_title, t.adventurers, t.states_checked, t.parks_checked,
+          t.favorite_meal, t.favorite_song, t.new_slang, t.new_memory_unlocked
+        ].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+      render(filtered);
+    }
+
+    searchEl.addEventListener("input", applySearch);
+
+    async function loadTrips(){
+      setStatus("Loading…", false);
+
+      const { data, error } = await sb
+        .from("trips")
+        .select("id, trip_title, start_date, end_date, cover_url, adventurers, states_checked, parks_checked, favorite_meal, favorite_song, new_slang, new_memory_unlocked, created_at")
+        .order("start_date", { ascending: true });
+
+      if (error){
+        setStatus("Load failed: " + error.message, true);
+        allTrips = [];
+        render(allTrips);
+        return;
+      }
+
+      allTrips = data || [];
+      setStatus("", false);
+      render(allTrips);
+    }
+
+    loadTrips();
+  </script>
+</body>
+</html>

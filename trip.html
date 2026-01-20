@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adventure Trakker — Trip</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/Trakker/supabase-config.js"></script>
+
+  <style>
+    :root{
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 16px 44px rgba(0,0,0,0.42);
+      --bg: #0b0b0b;
+      --danger: rgba(255,120,120,0.92);
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(ellipse at top, rgba(255,255,255,0.05), rgba(0,0,0,0.0) 55%), var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 22px 16px 44px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom:16px;
+    }
+    .title{
+      margin:0; font-weight:300; letter-spacing:0.06em;
+      color:var(--muted); font-size:clamp(22px, 2.6vw, 30px);
+      user-select:none;
+    }
+    .btn{
+      border:none; border-radius:14px; padding:10px 12px;
+      cursor:pointer; color:var(--text);
+      background: var(--panel); border:1px solid var(--border);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.30);
+      text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+      font-weight:300; font-size:13px;
+    }
+
+    .hero{
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      background: rgba(255,255,255,0.08);
+    }
+    .cover{
+      height: min(52vh, 420px);
+      background: rgba(0,0,0,0.18);
+      position:relative;
+      display:flex;
+      align-items:flex-end;
+      justify-content:flex-start;
+    }
+    .cover img{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit: cover;
+      display:none;
+    }
+    .cover-overlay{
+      position:absolute; inset:0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.10) 0%,
+        rgba(0,0,0,0.18) 45%,
+        rgba(0,0,0,0.70) 100%);
+      pointer-events:none;
+    }
+    .cover-meta{
+      position:relative;
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      z-index: 2;
+    }
+    .cover-title{
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      text-shadow: 0 14px 30px rgba(0,0,0,0.55);
+    }
+    .cover-dates{
+      font-size: 12px;
+      font-weight: 300;
+      opacity: 0.85;
+      text-shadow: 0 14px 30px rgba(0,0,0,0.55);
+    }
+
+    .body{
+      padding: 14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    @media (max-width: 760px){
+      .body{ grid-template-columns: 1fr; }
+    }
+
+    .item{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.22);
+      padding: 12px;
+      min-height: 54px;
+    }
+    .k{
+      font-size: 12px;
+      font-weight: 300;
+      opacity: 0.75;
+      margin-bottom: 6px;
+    }
+    .v{
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .status{ font-size: 12px; opacity: 0.75; min-height: 16px; }
+    .status.error{ color: var(--danger); opacity: 1; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1 class="title">Trip</h1>
+      <div style="display:flex; gap:10px;">
+        <a class="btn" href="/Trakker/trips.html">Back</a>
+        <a class="btn" href="/Trakker/index.html">Home</a>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="hero">
+      <div class="cover" id="cover">
+        <img id="coverImg" alt="" />
+        <div class="cover-overlay"></div>
+        <div class="cover-meta">
+          <div class="cover-title" id="title">Loading…</div>
+          <div class="cover-dates" id="dates"></div>
+        </div>
+      </div>
+
+      <div class="body" id="details">
+        <!-- filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const statusEl = document.getElementById("status");
+    const coverImg = document.getElementById("coverImg");
+    const titleEl = document.getElementById("title");
+    const datesEl = document.getElementById("dates");
+    const detailsEl = document.getElementById("details");
+
+    function setStatus(msg, isError=false){
+      statusEl.textContent = msg || "";
+      statusEl.classList.toggle("error", !!isError);
+    }
+
+    function fmtDate(isoDate){
+      if (!isoDate) return "";
+      const d = new Date(String(isoDate) + "T00:00:00");
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    function item(k, v){
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="k">${escapeHtml(k)}</div>
+        <div class="v">${escapeHtml(v || "—")}</div>
+      `;
+      return div;
+    }
+
+    function getTripId(){
+      const p = new URLSearchParams(window.location.search);
+      return p.get("id");
+    }
+
+    async function loadTrip(){
+      const id = getTripId();
+      if (!id){
+        setStatus("Missing trip id.", true);
+        return;
+      }
+
+      setStatus("Loading…", false);
+
+      const { data, error } = await sb
+        .from("trips")
+        .select("id, trip_title, adventurers, start_date, end_date, miles_driven, states_checked, parks_checked, favorite_meal, favorite_song, new_slang, new_memory_unlocked, cover_url, created_at")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error){
+        setStatus("Load failed: " + error.message, true);
+        return;
+      }
+      if (!data){
+        setStatus("Trip not found.", true);
+        return;
+      }
+
+      setStatus("", false);
+
+      titleEl.textContent = data.trip_title || "Untitled";
+      datesEl.textContent = `${fmtDate(data.start_date)} → ${fmtDate(data.end_date)}`;
+
+      if (data.cover_url){
+        coverImg.src = data.cover_url;
+        coverImg.style.display = "block";
+      }
+
+      detailsEl.innerHTML = "";
+      detailsEl.appendChild(item("Adventurers", data.adventurers));
+      detailsEl.appendChild(item("Miles driven", data.miles_driven != null ? String(data.miles_driven) : ""));
+      detailsEl.appendChild(item("States checked off", data.states_checked));
+      detailsEl.appendChild(item("National parks checked off", data.parks_checked));
+      detailsEl.appendChild(item("Favorite meal", data.favorite_meal));
+      detailsEl.appendChild(item("Favorite song", data.favorite_song));
+      detailsEl.appendChild(item("New slang", data.new_slang));
+      detailsEl.appendChild(item("New memory unlocked", data.new_memory_unlocked));
+    }
+
+    loadTrip();
+  </script>
+</body>
+</html>
