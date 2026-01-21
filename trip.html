@@ -74,6 +74,12 @@
       object-fit: cover;
       display:none;
     }
+    .cover-fallback{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      opacity: 0.55;
+    }
+    .tree{ width:110px; height:110px; }
     .cover-overlay{
       position:absolute; inset:0;
       background: linear-gradient(to bottom,
@@ -230,7 +236,6 @@
       flex-wrap: wrap;
     }
     .file-input{ display:none; }
-
     @media (max-width: 760px){
       .grid{ grid-template-columns: 1fr; }
     }
@@ -254,6 +259,16 @@
     <div class="hero">
       <div class="cover">
         <img id="coverImg" alt="" />
+        <div class="cover-fallback" id="coverFallback" aria-hidden="true">
+          <svg class="tree" viewBox="0 0 128 128" fill="none">
+            <path d="M64 14C54 26 50 36 50 42C50 52 58 60 68 60C78 60 86 52 86 42C86 36 82 26 72 14"
+              stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M64 60C54 60 42 68 42 82C42 96 54 106 64 106C74 106 86 96 86 82C86 68 74 60 64 60Z"
+              stroke="rgba(200,200,200,0.9)" stroke-width="3" />
+            <path d="M64 76V114" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M55 114H73" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
         <div class="cover-overlay"></div>
         <div class="cover-meta">
           <div class="cover-title" id="title">Loading…</div>
@@ -346,6 +361,7 @@
     const titleEl = document.getElementById("title");
     const datesEl = document.getElementById("dates");
     const coverImg = document.getElementById("coverImg");
+    const coverFallback = document.getElementById("coverFallback");
     const detailsEl = document.getElementById("details");
 
     const modal = document.getElementById("modal");
@@ -493,9 +509,11 @@
       if (t.cover_url){
         coverImg.src = t.cover_url;
         coverImg.style.display = "block";
+        coverFallback.style.display = "none";
       } else {
         coverImg.removeAttribute("src");
         coverImg.style.display = "none";
+        coverFallback.style.display = "flex";
       }
 
       detailsEl.innerHTML = "";
@@ -588,7 +606,6 @@
 
         setModalStatus("Saving…", false);
 
-        // FIX: single() -> maybeSingle(), and handle "no row returned"
         const { data, error } = await sb
           .from("trips")
           .update(updates)
@@ -602,7 +619,7 @@
         currentTrip = data;
         renderTrip(currentTrip);
 
-        setModalStatus("Saved.", false);
+        setModalStatus("Saved ✔", false);
         closeModal();
       }catch(e){
         setModalStatus("Save failed: " + (e?.message || e), true);
@@ -635,6 +652,3 @@
   </script>
 </body>
 </html>
-
-
-
