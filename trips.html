@@ -75,7 +75,6 @@
     @media (max-width: 840px){ .grid{ grid-template-columns: repeat(2, 1fr);} }
     @media (max-width: 520px){ .grid{ grid-template-columns: 1fr;} }
 
-    /* Minimal cover-as-background card */
     .card{
       position: relative;
       border-radius: 18px;
@@ -96,10 +95,8 @@
       background-size: cover;
       background-position: center;
       background-repeat:no-repeat;
-      filter: none;
     }
 
-    /* fallback tree for no photo */
     .fallback{
       position:absolute; inset:0;
       display:flex; align-items:center; justify-content:center;
@@ -107,7 +104,6 @@
     }
     .tree{ width:76px; height:76px; opacity:0.52; }
 
-    /* minimal overlay for readability */
     .overlay{
       position:absolute; inset:0;
       background: linear-gradient(to bottom,
@@ -215,7 +211,7 @@
     }
 
     function goTrip(id){
-      window.location.href = `/trip.html?id=${encodeURIComponent(id)}`;
+      window.location.href = `trip.html?id=${encodeURIComponent(id)}`;
     }
 
     function render(trips){
@@ -237,43 +233,29 @@
           if (e.key === "Enter" || e.key === " ") goTrip(t.id);
         });
 
-        const bg = t.cover_url
-card.className = "card";
+        if (t.cover_url){
+          const bg = document.createElement("div");
+          bg.className = "bg";
+          bg.style.backgroundImage = `url("${t.cover_url}")`;
+          card.appendChild(bg);
+        } else {
+          const fb = document.createElement("div");
+          fb.className = "fallback";
+          fb.innerHTML = treeSvg();
+          card.appendChild(fb);
+        }
 
-if (t.cover_url) {
-  const bg = document.createElement("div");
-  bg.className = "bg";
-  bg.style.backgroundImage = `url("${t.cover_url}")`; // <-- safe
-  card.appendChild(bg);
-} else {
-  const fb = document.createElement("div");
-  fb.className = "fallback";
-  fb.innerHTML = treeSvg();
-  card.appendChild(fb);
-}
+        const overlay = document.createElement("div");
+        overlay.className = "overlay";
+        card.appendChild(overlay);
 
-const overlay = document.createElement("div");
-overlay.className = "overlay";
-card.appendChild(overlay);
-
-const meta = document.createElement("div");
-meta.className = "meta";
-meta.innerHTML = `
-  <div class="trip-title">${escapeHtml(title)}</div>
-  <div class="trip-dates">${escapeHtml(dateLine)}</div>
-`;
-card.appendChild(meta);
-
-          `<div class="fallback">${treeSvg()}</div>`;
-
-        card.innerHTML = `
-          ${bg}
-          <div class="overlay"></div>
-          <div class="meta">
-            <div class="trip-title">${escapeHtml(title)}</div>
-            <div class="trip-dates">${escapeHtml(dateLine)}</div>
-          </div>
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.innerHTML = `
+          <div class="trip-title">${escapeHtml(title)}</div>
+          <div class="trip-dates">${escapeHtml(dateLine)}</div>
         `;
+        card.appendChild(meta);
 
         gridEl.appendChild(card);
       }
@@ -319,8 +301,3 @@ card.appendChild(meta);
   </script>
 </body>
 </html>
-
-
-
-
-
