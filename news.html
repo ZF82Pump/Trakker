@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adventure Trakker — News</title>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    :root{
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --panel-2: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 14px 30px rgba(0,0,0,0.30);
+      --bg: #0b0b0b;
+      --danger: rgba(255,120,120,0.92);
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(ellipse at top, rgba(255,255,255,0.05), rgba(0,0,0,0.0) 55%), var(--bg);
+      color: var(--text);
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 22px 16px 44px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    .title{ margin:0; font-weight:300; letter-spacing:0.06em; color:var(--muted); font-size: clamp(24px, 2.6vw, 32px); user-select:none; }
+    .btn{
+      border:none; border-radius:14px; padding:10px 12px;
+      cursor:pointer; color:var(--text);
+      background: var(--panel); border:1px solid var(--border);
+      box-shadow: var(--shadow);
+      text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+      font-weight:300; font-size:13px;
+      user-select:none;
+    }
+    .panel{
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(6px);
+    }
+    .panel-head{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .panel-title{ margin:0; font-weight:300; letter-spacing:0.05em; color: rgba(220,220,220,0.85); font-size: 14px; }
+    .soft{ font-size: 12px; font-weight: 300; color: rgba(245,245,245,0.60); }
+    .soft.error{ color: var(--danger); }
+
+    .panel-body{
+      padding: 12px 14px 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      background: var(--panel-2);
+      min-height: 120px;
+    }
+    .snippet{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.18);
+      padding: 10px 12px;
+    }
+    .line1{ display:flex; align-items:center; justify-content:space-between; gap: 10px; margin-bottom: 6px; }
+    .name{
+      font-size: 13px; font-weight: 300; color: rgba(245,245,245,0.90);
+      min-width: 0; flex: 1;
+      white-space: nowrap; overflow:hidden; text-overflow: ellipsis;
+    }
+    .date{ font-size: 12px; font-weight: 300; color: rgba(245,245,245,0.65); white-space: nowrap; }
+    .note{ font-size: 12px; font-weight: 300; color: rgba(245,245,245,0.70); line-height: 1.45; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1 class="title">News</h1>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="index.html">Home</a>
+        <a class="btn" href="trips.html">Trips</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Latest</h2>
+        <div class="soft" id="status"></div>
+      </div>
+      <div class="panel-body" id="newsFeed">
+        <div class="soft">Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const feed = document.getElementById("newsFeed");
+    const statusEl = document.getElementById("status");
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+    function fmtDate(ts){
+      if (!ts) return "";
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    async function loadNews(){
+      statusEl.textContent = "";
+
+      const { data, error } = await sb
+        .from("news")
+        .select("id, header, body, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error){
+        feed.innerHTML = "";
+        const msg = document.createElement("div");
+        msg.className = "soft error";
+        msg.textContent = "Unable to load.";
+        feed.appendChild(msg);
+        return;
+      }
+
+      const items = data || [];
+      if (!items.length){
+        feed.innerHTML = "";
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "No news yet.";
+        feed.appendChild(msg);
+        return;
+      }
+
+      feed.innerHTML = "";
+      for (const n of items){
+        const el = document.createElement("div");
+        el.className = "snippet";
+        el.innerHTML = `
+          <div class="line1">
+            <div class="name">${escapeHtml(n.header)}</div>
+            <div class="date">${escapeHtml(fmtDate(n.created_at))}</div>
+          </div>
+          <div class="note">${escapeHtml(n.body || "")}</div>
+        `;
+        feed.appendChild(el);
+      }
+    }
+
+    loadNews();
+  </script>
+</body>
+</html>
