@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adventure Trakker</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    :root{
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --panel-2: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 14px 30px rgba(0,0,0,0.30);
+      --bg: #0b0b0b;
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .bg-world{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.38;
+      filter: saturate(0.9) contrast(1.05);
+    }
+    .bg-world svg{ width:100%; height:100%; }
+
+    .header, .wrap, .float{ position:relative; z-index:2; }
+
+    .header{
+      position:absolute; left:0; right:0; top:18px;
+      text-align:center; pointer-events:none;
+    }
+    .header h1{
+      margin:0;
+      font-weight:300;
+      letter-spacing:0.08em;
+      color:rgba(190,190,190,0.92);
+      font-size:clamp(28px,3vw,46px);
+      text-shadow:0 12px 26px rgba(0,0,0,0.40);
+    }
+
+    .wrap{
+      height:100%;
+      display:grid;
+      grid-template-columns:360px 1fr 360px;
+      gap:14px;
+      padding:18px 16px;
+      box-sizing:border-box;
+    }
+
+    .panel{
+      margin-top:74px;
+      border-radius:18px;
+      background:var(--panel);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter:blur(6px);
+    }
+    .panel-head{
+      display:flex; justify-content:space-between;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      background:rgba(255,255,255,0.06);
+    }
+    .panel-title{
+      margin:0; font-weight:300; letter-spacing:0.05em;
+      color:rgba(220,220,220,0.85); font-size:14px;
+    }
+    .panel-link{
+      font-size:12px; color:rgba(245,245,245,0.75);
+      text-decoration:none;
+    }
+    .panel-body{
+      padding:12px 14px;
+      background:var(--panel-2);
+      display:flex; flex-direction:column; gap:10px;
+    }
+
+    .snippet{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(0,0,0,0.18);
+      padding:10px 12px;
+    }
+    .line1{
+      display:flex; justify-content:space-between; margin-bottom:6px;
+    }
+    .name{ font-size:13px; }
+    .date{ font-size:12px; opacity:0.65; }
+    .note{ font-size:12px; opacity:0.7; }
+
+    .float{
+      position:fixed; left:50%; bottom:18px;
+      transform:translateX(-50%);
+      display:flex; gap:12px;
+    }
+    .btn{
+      border-radius:16px;
+      padding:12px 16px;
+      background:rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.16);
+      color:rgba(245,245,245,0.92);
+      text-decoration:none;
+    }
+
+    @media(max-width:1060px){
+      html,body{overflow:auto;}
+      .wrap{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="bg-world" aria-hidden="true">
+  <svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+    <path d="M140,170 C160,120 230,90 300,110 C340,120 370,145 395,175 C420,210 410,250 380,265 C355,277 320,272 300,290 C275,312 245,335 205,325 C165,315 130,280 120,240 C112,210 125,190 140,170Z" fill="rgba(255,255,255,0.18)"/>
+    <path d="M320,300 C350,290 380,305 398,332 C420,366 405,420 382,460 C360,500 338,520 320,510 C300,496 304,460 295,430 C282,388 290,330 320,300Z" fill="rgba(255,255,255,0.16)"/>
+    <path d="M520,160 C545,140 590,138 620,152 C645,165 650,190 630,205 C612,218 585,220 560,215 C535,210 510,185 520,160Z" fill="rgba(255,255,255,0.16)"/>
+    <path d="M590,225 C620,215 665,230 688,262 C710,294 710,350 688,395 C665,440 620,452 596,430 C572,408 570,360 562,330 C552,290 560,238 590,225Z" fill="rgba(255,255,255,0.15)"/>
+    <path d="M650,150 C705,120 780,115 855,140 C910,158 965,190 1000,235 C1030,275 1015,315 975,330 C935,345 895,330 860,350 C820,372 780,400 730,390 C685,382 650,350 640,310 C630,270 625,175 650,150Z" fill="rgba(255,255,255,0.14)"/>
+    <path d="M920,420 C950,405 1005,410 1035,435 C1060,455 1050,485 1020,495 C990,506 950,498 930,478 C910,458 900,435 920,420Z" fill="rgba(255,255,255,0.14)"/>
+  </svg>
+</div>
+
+<div class="header"><h1>Adventure Trakker</h1></div>
+
+<div class="wrap">
+  <aside class="panel">
+    <div class="panel-head"><h2 class="panel-title">News</h2><a class="panel-link" href="news.html">Open</a></div>
+    <div class="panel-body" id="newsList">Loading…</div>
+  </aside>
+
+  <main></main>
+
+  <aside class="panel">
+    <div class="panel-head"><h2 class="panel-title">Upcoming trips</h2><a class="panel-link" href="trips.html">Open</a></div>
+    <div class="panel-body" id="upcomingList">Loading…</div>
+  </aside>
+</div>
+
+<div class="float">
+  <a class="btn" href="trips.html">View trips</a>
+  <a class="btn" href="adder.html">Add trip</a>
+</div>
+
+<script>
+  const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+  async function loadNews(){
+    const el=document.getElementById("newsList"); el.innerHTML="";
+    const {data}=await sb.from("news").select("header,body,created_at").order("created_at",{ascending:false}).limit(3);
+    if(!data||!data.length){ el.textContent="No news yet."; return;}
+    data.forEach(n=>el.innerHTML+=`<div class="snippet"><div class="line1"><div class="name">${n.header}</div><div class="date">${new Date(n.created_at).toLocaleDateString()}</div></div><div class="note">${n.body||""}</div></div>`);
+  }
+  async function loadTrips(){
+    const el=document.getElementById("upcomingList"); el.innerHTML="";
+    const today=new Date().toISOString().slice(0,10);
+    const {data}=await sb.from("trips").select("trip_title,start_date,end_date").gte("start_date",today).order("start_date").limit(3);
+    if(!data||!data.length){ el.textContent="No upcoming trips."; return;}
+    data.forEach(t=>el.innerHTML+=`<div class="snippet"><div class="line1"><div class="name">${t.trip_title}</div><div class="date">${t.start_date} → ${t.end_date}</div></div></div>`);
+  }
+  loadNews(); loadTrips();
+</script>
+
+</body>
+</html>
