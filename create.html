@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adventure Trakker — Create profile</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    :root{
+  --text: rgba(245,245,245,0.92);
+  --muted: rgba(180,180,180,0.92);
+  --panel: rgba(255,255,255,0.10);
+  --panel-2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.16);
+  --shadow: 0 14px 30px rgba(0,0,0,0.30);
+  --bg: #0b0b0b;
+  --danger: rgba(255,120,120,0.92);
+  --ok: rgba(150,255,190,0.85);
+}
+html, body{
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+a{ color: inherit; }
+    body{ display:flex; align-items:center; justify-content:center; padding: 18px; }
+    .card{
+      width: min(560px, 100%);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(6px);
+    }
+    .head{
+      padding: 16px 16px 10px;
+      background: rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    h1{ margin:0; font-weight:300; letter-spacing:0.06em; color: var(--muted); font-size: 22px; }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; gap: 10px; }
+    .pill{
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      text-decoration:none;
+      font-weight: 300;
+      font-size: 13px;
+      color: rgba(245,245,245,0.88);
+    }
+    .body{ padding: 14px 16px 16px; background: rgba(255,255,255,0.07); }
+    .row{ display:flex; flex-direction:column; gap: 8px; margin-bottom: 12px; }
+    label{ font-size: 12px; font-weight:300; color: rgba(245,245,245,0.70); }
+    input{
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.22);
+      color: rgba(245,245,245,0.92);
+      outline: none;
+      font-weight: 300;
+    }
+    input::placeholder{ color: rgba(245,245,245,0.40); }
+
+    .avatarRow{ display:flex; align-items:center; gap: 12px; margin: 12px 0 14px; }
+    .avatarPreview{
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.35);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+    }
+    .avatarPreview img{ width:100%; height:100%; object-fit: cover; display:none; }
+    .avatarInitial{ font-weight: 300; font-size: 22px; letter-spacing: 0.02em; }
+
+    .btn{
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      color: rgba(245,245,245,0.92);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.15); }
+
+    .status{ margin-top: 10px; font-size: 12px; font-weight:300; color: rgba(245,245,245,0.70); min-height: 16px; }
+    .status.error{ color: var(--danger); }
+    .status.ok{ color: var(--ok); }
+
+    .fine{ margin-top: 12px; font-size: 12px; font-weight:300; color: rgba(245,245,245,0.55); line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div class="topbar">
+        <h1>Create profile</h1>
+        <a class="pill" href="signin.html">Back</a>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="row">
+        <label for="username">Username (3–24, a–z 0–9 . _)</label>
+        <input id="username" autocomplete="username" placeholder="yourname" />
+      </div>
+
+      <div class="row">
+        <label for="password">Password (min 6)</label>
+        <input id="password" type="password" autocomplete="new-password" placeholder="••••••••" />
+      </div>
+
+      <div class="row">
+        <label for="nickname">Nickname</label>
+        <input id="nickname" placeholder="What friends see" />
+      </div>
+
+      <div class="avatarRow">
+        <div class="avatarPreview" id="avatarPreview">
+          <img id="avatarImg" alt="avatar preview"/>
+          <div class="avatarInitial" id="avatarInitial">A</div>
+        </div>
+        <div style="flex:1">
+          <div class="row" style="margin-bottom:0">
+            <label for="avatarFile">Profile picture (optional)</label>
+            <input id="avatarFile" type="file" accept="image/*" />
+          </div>
+        </div>
+      </div>
+
+      <button id="createBtn" class="btn">Create profile</button>
+
+      <div class="status" id="status"></div>
+
+      <div class="fine">Tip: No email needed. We use your username only.</div>
+    </div>
+  </div>
+
+  <script>
+    function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function usernameToEmail(username){
+  return `${String(username).trim().toLowerCase()}@trakker.site`;
+}
+function normalizeUsername(username){
+  return String(username || "").trim().toLowerCase();
+}
+function isValidUsername(username){
+  // lowercase letters, numbers, underscore, dot. 3-24 chars.
+  return /^[a-z0-9._]{3,24}$/.test(username);
+}
+function hashToHue(str){
+  let h = 0;
+  for (let i=0;i<str.length;i++){
+    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h % 360;
+}
+function initialFromNickname(nickname){
+  const n = String(nickname || "").trim();
+  if (!n) return "?";
+  const ch = n[0].toUpperCase();
+  return /[A-Z0-9]/.test(ch) ? ch : "?";
+}
+function colorFromNickname(nickname){
+  const hue = hashToHue(String(nickname||""));
+  return `hsl(${hue} 70% 60%)`;
+}
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const usernameEl = document.getElementById("username");
+    const passwordEl = document.getElementById("password");
+    const nicknameEl = document.getElementById("nickname");
+    const avatarFileEl = document.getElementById("avatarFile");
+    const statusEl = document.getElementById("status");
+
+    const avatarPreview = document.getElementById("avatarPreview");
+    const avatarImg = document.getElementById("avatarImg");
+    const avatarInitial = document.getElementById("avatarInitial");
+
+    function setStatus(msg, type){
+      statusEl.className = "status" + (type ? (" " + type) : "");
+      statusEl.textContent = msg || "";
+    }
+
+    function refreshFallbackAvatar(){
+      const nick = String(nicknameEl.value || "");
+      const init = initialFromNickname(nick);
+      const color = colorFromNickname(nick || "adventure");
+      avatarInitial.textContent = init;
+      avatarInitial.style.color = color;
+      avatarPreview.style.background = "rgba(0,0,0,0.40)";
+    }
+    nicknameEl.addEventListener("input", refreshFallbackAvatar);
+    refreshFallbackAvatar();
+
+    avatarFileEl.addEventListener("change", () => {
+      const file = avatarFileEl.files && avatarFileEl.files[0];
+      if (!file){
+        avatarImg.style.display = "none";
+        avatarInitial.style.display = "block";
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      avatarImg.src = url;
+      avatarImg.style.display = "block";
+      avatarInitial.style.display = "none";
+    });
+
+    async function uploadAvatarIfAny(userId){
+      const file = avatarFileEl.files && avatarFileEl.files[0];
+      if (!file) return null;
+
+      const ext = (file.name.split(".").pop() || "png").toLowerCase();
+      const safeExt = ext.match(/^[a-z0-9]+$/) ? ext : "png";
+      const path = `avatars/${userId}/avatar_${Date.now()}.${safeExt}`;
+
+      const { error: upErr } = await sb.storage
+        .from("profile-avatars")
+        .upload(path, file, { upsert: true, cacheControl: "3600" });
+
+      if (upErr) throw upErr;
+
+      const { data } = sb.storage.from("profile-avatars").getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    async function doCreate(){
+      setStatus("Checking…");
+      const username = normalizeUsername(usernameEl.value);
+      const password = String(passwordEl.value || "");
+      const nickname = String(nicknameEl.value || "").trim();
+
+      if (!isValidUsername(username)){
+        setStatus("Username must be 3–24 chars (a–z, 0–9, . or _).", "error");
+        return;
+      }
+      if (password.length < 6){
+        setStatus("Password must be at least 6 characters.", "error");
+        return;
+      }
+      if (!nickname){
+        setStatus("Nickname is required.", "error");
+        return;
+      }
+
+      const email = usernameToEmail(username);
+
+      setStatus("Creating account…");
+      const { error: signUpErr } = await sb.auth.signUp({ email, password });
+      if (signUpErr){
+        setStatus(signUpErr.message || "Unable to create account.", "error");
+        return;
+      }
+
+      setStatus("Signing in…");
+      const { error: signInErr } = await sb.auth.signInWithPassword({ email, password });
+      if (signInErr){
+        setStatus("Account created, but sign-in failed. Try signing in.", "error");
+        return;
+      }
+
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user){
+        setStatus("Signed in, but no user session found.", "error");
+        return;
+      }
+
+      const init = initialFromNickname(nickname);
+      const color = colorFromNickname(nickname);
+
+      setStatus("Saving profile…");
+
+      let avatarUrl = null;
+      try { avatarUrl = await uploadAvatarIfAny(user.id); } catch(e){ console.warn(e); }
+
+      const { error: profErr } = await sb.from("profiles").insert([{
+        id: user.id,
+        username,
+        nickname,
+        avatar_url: avatarUrl,
+        avatar_initial: init,
+        avatar_color: color
+      }]);
+
+      if (profErr){
+        setStatus(profErr.message || "Unable to save profile.", "error");
+        return;
+      }
+
+      setStatus("Created.", "ok");
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("createBtn").addEventListener("click", doCreate);
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) window.location.href = "profile.html";
+    })();
+  </script>
+</body>
+</html>

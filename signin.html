@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adventure Trakker — Sign in</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    :root{
+  --text: rgba(245,245,245,0.92);
+  --muted: rgba(180,180,180,0.92);
+  --panel: rgba(255,255,255,0.10);
+  --panel-2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.16);
+  --shadow: 0 14px 30px rgba(0,0,0,0.30);
+  --bg: #0b0b0b;
+  --danger: rgba(255,120,120,0.92);
+  --ok: rgba(150,255,190,0.85);
+}
+html, body{
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+a{ color: inherit; }
+    body{ display:flex; align-items:center; justify-content:center; padding: 18px; }
+    .card{
+      width: min(520px, 100%);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(6px);
+    }
+    .head{
+      padding: 16px 16px 10px;
+      background: rgba(255,255,255,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    h1{ margin:0; font-weight:300; letter-spacing:0.06em; color: var(--muted); font-size: 22px; }
+    .body{ padding: 14px 16px 16px; background: rgba(255,255,255,0.07); }
+    .row{ display:flex; flex-direction:column; gap: 8px; margin-bottom: 12px; }
+    label{ font-size: 12px; font-weight:300; color: rgba(245,245,245,0.70); }
+    input{
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.22);
+      color: rgba(245,245,245,0.92);
+      outline: none;
+      font-weight: 300;
+    }
+    input::placeholder{ color: rgba(245,245,245,0.40); }
+    .btn{
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      color: rgba(245,245,245,0.92);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.15); }
+    .link{
+      margin-top: 12px;
+      display:inline-block;
+      font-size: 12px;
+      font-weight:300;
+      color: rgba(245,245,245,0.70);
+      text-decoration:none;
+    }
+    .link:hover{ text-decoration: underline; }
+    .status{ margin-top: 10px; font-size: 12px; font-weight:300; color: rgba(245,245,245,0.70); min-height: 16px; }
+    .status.error{ color: var(--danger); }
+    .status.ok{ color: var(--ok); }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; gap: 10px; }
+    .pill{
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      text-decoration:none;
+      font-weight: 300;
+      font-size: 13px;
+      color: rgba(245,245,245,0.88);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">
+      <div class="topbar">
+        <h1>Sign in</h1>
+        <a class="pill" href="index.html">Home</a>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="row">
+        <label for="username">Username</label>
+        <input id="username" autocomplete="username" placeholder="yourname" />
+      </div>
+
+      <div class="row">
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+      </div>
+
+      <button id="signinBtn" class="btn">Sign in</button>
+
+      <div class="status" id="status"></div>
+
+      <a class="link" href="create.html">Sign up</a>
+    </div>
+  </div>
+
+  <script>
+    function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function usernameToEmail(username){
+  return `${String(username).trim().toLowerCase()}@trakker.site`;
+}
+function normalizeUsername(username){
+  return String(username || "").trim().toLowerCase();
+}
+function isValidUsername(username){
+  // lowercase letters, numbers, underscore, dot. 3-24 chars.
+  return /^[a-z0-9._]{3,24}$/.test(username);
+}
+function hashToHue(str){
+  let h = 0;
+  for (let i=0;i<str.length;i++){
+    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h % 360;
+}
+function initialFromNickname(nickname){
+  const n = String(nickname || "").trim();
+  if (!n) return "?";
+  const ch = n[0].toUpperCase();
+  return /[A-Z0-9]/.test(ch) ? ch : "?";
+}
+function colorFromNickname(nickname){
+  const hue = hashToHue(String(nickname||""));
+  return `hsl(${hue} 70% 60%)`;
+}
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const usernameEl = document.getElementById("username");
+    const passwordEl = document.getElementById("password");
+    const statusEl = document.getElementById("status");
+
+    function setStatus(msg, type){
+      statusEl.className = "status" + (type ? (" " + type) : "");
+      statusEl.textContent = msg || "";
+    }
+
+    async function doSignIn(){
+      setStatus("Checking…");
+      const username = normalizeUsername(usernameEl.value);
+      const password = String(passwordEl.value || "");
+
+      if (!isValidUsername(username)){
+        setStatus("Username must be 3–24 chars (a–z, 0–9, . or _).", "error");
+        return;
+      }
+      if (password.length < 6){
+        setStatus("Password must be at least 6 characters.", "error");
+        return;
+      }
+
+      const email = usernameToEmail(username);
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error){
+        setStatus("Invalid credentials.", "error");
+        return;
+      }
+
+      setStatus("Signed in.", "ok");
+      window.location.href = "index.html";
+    }
+
+    document.getElementById("signinBtn").addEventListener("click", doSignIn);
+    [usernameEl, passwordEl].forEach(el => el.addEventListener("keydown", (e)=>{
+      if (e.key === "Enter") doSignIn();
+    }));
+
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) window.location.href = "index.html";
+    })();
+  </script>
+</body>
+</html>
