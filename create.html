@@ -7,6 +7,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  <script src="supabase-client.js"></script>
 
   <style>
     :root{
@@ -184,9 +185,8 @@ function colorFromNickname(nickname){
   const hue = hashToHue(String(nickname||""));
   return `hsl(${hue} 70% 60%)`;
 }
-    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-
-    const usernameEl = document.getElementById("username");
+    const sb = window.sb;
+const usernameEl = document.getElementById("username");
     const passwordEl = document.getElementById("password");
     const nicknameEl = document.getElementById("nickname");
     const avatarFileEl = document.getElementById("avatarFile");
