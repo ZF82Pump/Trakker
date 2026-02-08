@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Adventure Trakker — Trip</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    :root{
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 16px 44px rgba(0,0,0,0.42);
+      --bg: #0b0b0b;
+      --danger: rgba(255,120,120,0.92);
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(ellipse at top, rgba(255,255,255,0.05), rgba(0,0,0,0.0) 55%), var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+    .wrap{ max-width: 980px; margin: 0 auto; padding: 22px 16px 44px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom:16px;
+    }
+    .title{
+      margin:0; font-weight:300; letter-spacing:0.06em;
+      color:var(--muted); font-size:clamp(22px, 2.6vw, 30px);
+      user-select:none;
+    }
+    .btn{
+      border:none; border-radius:14px; padding:10px 12px;
+      cursor:pointer; color:var(--text);
+      background: var(--panel); border:1px solid var(--border);
+      box-shadow: 0 14px 30px rgba(0,0,0,0.30);
+      text-decoration:none; display:inline-flex; align-items:center; gap:10px;
+      font-weight:300; font-size:13px;
+    }
+    .btn.danger{
+      background: rgba(255,120,120,0.12);
+      border: 1px solid rgba(255,120,120,0.22);
+    }
+
+    .hero{
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      background: rgba(255,255,255,0.08);
+    }
+    .cover{
+      height: min(52vh, 420px);
+      background: rgba(0,0,0,0.18);
+      position:relative;
+      display:flex;
+      align-items:flex-end;
+      justify-content:flex-start;
+    }
+    .cover img{
+      position:absolute; inset:0;
+      width:100%; height:100%;
+      object-fit: cover;
+      display:none;
+    }
+    .cover-fallback{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      opacity: 0.55;
+    }
+    .tree{ width:110px; height:110px; }
+    .cover-overlay{
+      position:absolute; inset:0;
+      background: linear-gradient(to bottom,
+        rgba(0,0,0,0.10) 0%,
+        rgba(0,0,0,0.18) 45%,
+        rgba(0,0,0,0.70) 100%);
+      pointer-events:none;
+    }
+    .cover-meta{
+      position:relative;
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      z-index: 2;
+      width: 100%;
+    }
+    .cover-title{
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      text-shadow: 0 14px 30px rgba(0,0,0,0.55);
+    }
+    .cover-dates{
+      font-size: 12px;
+      font-weight: 300;
+      opacity: 0.85;
+      text-shadow: 0 14px 30px rgba(0,0,0,0.55);
+    }
+
+    .body{
+      padding: 14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    @media (max-width: 760px){
+      .body{ grid-template-columns: 1fr; }
+    }
+
+    .item{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.22);
+      padding: 12px;
+      min-height: 54px;
+    }
+    .k{
+      font-size: 12px;
+      font-weight: 300;
+      opacity: 0.75;
+      margin-bottom: 6px;
+    }
+    .v{
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .status{ font-size: 12px; opacity: 0.75; min-height: 16px; }
+    .status.error{ color: var(--danger); opacity: 1; }
+
+    /* Modal */
+    .modal{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 16px;
+      z-index: 999;
+    }
+    .modal.open{ display:flex; }
+    .modal-card{
+      width: min(920px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(20,20,20,0.92);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.55);
+      overflow:hidden;
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 14px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+    }
+    .modal-head h2{
+      margin:0;
+      font-weight:300;
+      letter-spacing:0.04em;
+      font-size: 16px;
+      color: rgba(245,245,245,0.9);
+    }
+    .modal-body{
+      padding: 14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      min-width: 0;
+    }
+    .full{ grid-column: 1 / -1; }
+    label{
+      font-size: 12px;
+      opacity: 0.75;
+      font-weight:300;
+      color: rgba(245,245,245,0.85);
+    }
+    input, textarea{
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.25);
+      padding: 10px 12px;
+      color: rgba(245,245,245,0.92);
+      font-size: 13px;
+      outline: none;
+      box-sizing:border-box;
+    }
+    textarea{ resize:vertical; min-height: 64px; }
+
+    .modal-foot{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px;
+      border-top: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    .modal-status{
+      font-size: 12px;
+      opacity: 0.75;
+      min-height: 16px;
+    }
+    .modal-status.error{ color: var(--danger); opacity: 1; }
+
+    .file-row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+    .file-input{ display:none; }
+    @media (max-width: 760px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1 class="title">Trip <span id="ownerHint" class="soft" style="font-size:12px; margin-left:10px;"></span></h1>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="trips.html">Back</a>
+        <a class="btn" href="index.html">Home</a>
+        <button class="btn" id="editBtn" type="button">Edit</button>
+        <button class="btn danger" id="deleteBtn" type="button">Delete</button>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="hero">
+      <div class="cover">
+        <img id="coverImg" alt="" />
+        <div class="cover-fallback" id="coverFallback" aria-hidden="true">
+          <svg class="tree" viewBox="0 0 128 128" fill="none">
+            <path d="M64 14C54 26 50 36 50 42C50 52 58 60 68 60C78 60 86 52 86 42C86 36 82 26 72 14"
+              stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M64 60C54 60 42 68 42 82C42 96 54 106 64 106C74 106 86 96 86 82C86 68 74 60 64 60Z"
+              stroke="rgba(200,200,200,0.9)" stroke-width="3" />
+            <path d="M64 76V114" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M55 114H73" stroke="rgba(200,200,200,0.9)" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="cover-overlay"></div>
+        <div class="cover-meta">
+          <div class="cover-title" id="title">Loading…</div>
+          <div class="cover-dates" id="dates"></div>
+        </div>
+      </div>
+
+      <div class="body" id="details"></div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal" id="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>Edit trip</h2>
+        <button class="btn" id="closeModalBtn" type="button">Close</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid">
+          <div class="field">
+            <label>Trip title *</label>
+            <input id="e_title" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Adventurers *</label>
+            <input id="e_adventurers" type="text" autocomplete="off">
+          </div>
+
+          <div class="field full">
+            <label>Time frame *</label>
+            <input id="e_dateRange" type="text" autocomplete="off">
+          </div>
+
+          <div class="field">
+            <label>Miles driven</label>
+            <input id="e_miles" type="number" min="0" step="1" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>States checked off</label>
+            <input id="e_states" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>National parks checked off</label>
+            <input id="e_parks" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Favorite meal</label>
+            <input id="e_meal" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>Favorite song</label>
+            <input id="e_song" type="text" autocomplete="off">
+          </div>
+          <div class="field">
+            <label>New slang</label>
+            <input id="e_slang" type="text" autocomplete="off">
+          </div>
+          <div class="field full">
+            <label>Trip Info</label>
+            <textarea id="e_memory" autocomplete="off"></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Cover photo</label>
+            <div class="file-row">
+              <button class="btn" id="pickCoverBtn" type="button">Replace photo</button>
+              <button class="btn danger" id="removeCoverBtn" type="button">Remove photo</button>
+              <input class="file-input" id="coverFile" type="file" accept="image/*">
+            </div>
+            <div style="font-size:12px; opacity:0.75; margin-top:6px;">
+              Replace uploads a new image and updates the trip. Remove clears the cover URL.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <div class="modal-status" id="modalStatus"></div>
+        <button class="btn" id="saveEditBtn" type="button">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  (async () => {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user){
+      window.location.href = "signin.html";
+      return;
+    }
+    currentUser = user;
+    // init is called after auth
+    
+  })();
+
+    const statusEl = document.getElementById("status");
+    const titleEl = document.getElementById("title");
+    const datesEl = document.getElementById("dates");
+    const coverImg = document.getElementById("coverImg");
+    const coverFallback = document.getElementById("coverFallback");
+    const detailsEl = document.getElementById("details");
+
+    const modal = document.getElementById("modal");
+    const modalStatus = document.getElementById("modalStatus");
+
+    const editBtn = document.getElementById("editBtn");
+    const deleteBtn = document.getElementById("deleteBtn");
+
+    const e_title = document.getElementById("e_title");
+    const e_adventurers = document.getElementById("e_adventurers");
+    const e_dateRange = document.getElementById("e_dateRange");
+    const e_miles = document.getElementById("e_miles");
+    const e_states = document.getElementById("e_states");
+    const e_parks = document.getElementById("e_parks");
+    const e_meal = document.getElementById("e_meal");
+    const e_song = document.getElementById("e_song");
+    const e_slang = document.getElementById("e_slang");
+    const e_memory = document.getElementById("e_memory");
+
+    const pickCoverBtn = document.getElementById("pickCoverBtn");
+    const removeCoverBtn = document.getElementById("removeCoverBtn");
+    const coverFile = document.getElementById("coverFile");
+
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const saveEditBtn = document.getElementById("saveEditBtn");
+
+    let fp = null;
+    let currentTrip = null;
+    let pendingCoverFile = null;
+    let removeCover = false;
+
+    function setStatus(msg, isError=false){
+      statusEl.textContent = msg || "";
+      statusEl.classList.toggle("error", !!isError);
+    }
+    function setModalStatus(msg, isError=false){
+      modalStatus.textContent = msg || "";
+      modalStatus.classList.toggle("error", !!isError);
+    }
+
+    function fmtDate(isoDate){
+      if (!isoDate) return "";
+      const d = new Date(String(isoDate) + "T00:00:00");
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    function item(k, v){
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="k">${escapeHtml(k)}</div>
+        <div class="v">${escapeHtml(v || "—")}</div>
+      `;
+      return div;
+    }
+
+    function getTripId(){
+      const p = new URLSearchParams(window.location.search);
+      return p.get("id");
+    }
+
+    function openModal(){
+      modal.classList.add("open");
+      setModalStatus("", false);
+      pendingCoverFile = null;
+      removeCover = false;
+
+      if (!fp){
+        fp = flatpickr(e_dateRange, { mode:"range", dateFormat:"Y-m-d", allowInput:true });
+      }
+    }
+    function closeModal(){
+      modal.classList.remove("open");
+    }
+
+    closeModalBtn.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    pickCoverBtn.addEventListener("click", () => coverFile.click());
+    coverFile.addEventListener("change", () => {
+      const f = coverFile.files && coverFile.files[0];
+      if (!f) return;
+      pendingCoverFile = f;
+      removeCover = false;
+      setModalStatus("New cover selected (will upload on Save).", false);
+    });
+
+    removeCoverBtn.addEventListener("click", () => {
+      pendingCoverFile = null;
+      removeCover = true;
+      coverFile.value = "";
+      setModalStatus("Cover will be removed on Save.", false);
+    });
+
+    async function uploadCoverPhoto(file){
+      if (!file) return null;
+
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const filename = `${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+      const path = `covers/${filename}`;
+
+      const { error: upErr } = await sb.storage
+        .from("trip-photos")
+        .upload(path, file, { upsert: false, contentType: file.type });
+
+      if (upErr) throw upErr;
+
+      const { data } = sb.storage.from("trip-photos").getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    function fillEditForm(t){
+      e_title.value = t.trip_title || "";
+      e_adventurers.value = t.adventurers || "";
+
+      const s = t.start_date || "";
+      const e = t.end_date || "";
+      e_dateRange.value = (s && e) ? `${s} to ${e}` : "";
+
+      e_miles.value = t.miles_driven ?? "";
+      e_states.value = t.states_checked ?? "";
+      e_parks.value = t.parks_checked ?? "";
+      e_meal.value = t.favorite_meal ?? "";
+      e_song.value = t.favorite_song ?? "";
+      e_slang.value = t.new_slang ?? "";
+      e_memory.value = t.new_memory_unlocked ?? "";
+
+      if (fp){
+        fp.setDate([s, e], true, "Y-m-d");
+      }
+    }
+
+    function renderTrip(t){
+      titleEl.textContent = t.trip_title || "Untitled";
+      datesEl.textContent = `${fmtDate(t.start_date)} → ${fmtDate(t.end_date)}`;
+
+      if (t.cover_url){
+        coverImg.src = t.cover_url;
+        coverImg.style.display = "block";
+        coverFallback.style.display = "none";
+      } else {
+        coverImg.removeAttribute("src");
+        coverImg.style.display = "none";
+        coverFallback.style.display = "flex";
+      }
+
+      detailsEl.innerHTML = "";
+      detailsEl.appendChild(item("Adventurers", t.adventurers));
+      detailsEl.appendChild(item("Miles driven", t.miles_driven != null ? String(t.miles_driven) : ""));
+      detailsEl.appendChild(item("States checked off", t.states_checked));
+      detailsEl.appendChild(item("National parks checked off", t.parks_checked));
+      detailsEl.appendChild(item("Favorite meal", t.favorite_meal));
+      detailsEl.appendChild(item("Favorite song", t.favorite_song));
+      detailsEl.appendChild(item("New slang", t.new_slang));
+      detailsEl.appendChild(item("Trip Info", t.new_memory_unlocked));
+    }
+
+    async function loadTrip(){
+      const id = getTripId();
+      if (!id){
+        setStatus("Missing trip id.", true);
+        return;
+      }
+
+      setStatus("Loading…", false);
+
+      const { data, error } = await sb
+        .from("trips")
+        .select("id, owner_id, visibility, trip_title, adventurers, start_date, end_date, miles_driven, states_checked, parks_checked, favorite_meal, favorite_song, new_slang, new_memory_unlocked, cover_url, created_at")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error){
+        setStatus("Load failed: " + error.message, true);
+        return;
+      }
+      if (!data){
+        setStatus("Trip not found.", true);
+        return;
+      }
+
+      setStatus("", false);
+      currentTrip = data;
+
+      const isOwner = (currentTrip.owner_id === currentUser.id);
+      // If not the owner, hide edit controls (view-only)
+      if (!isOwner){
+        const editBtnEl = document.getElementById("editBtn");
+        const delBtnEl = document.getElementById("deleteBtn");
+        if (editBtnEl) editBtnEl.style.display = "none";
+        if (delBtnEl) delBtnEl.style.display = "none";
+        const hint = document.getElementById("ownerHint");
+        if (hint) hint.textContent = "View-only (friend trip)";
+      } else {
+        const hint = document.getElementById("ownerHint");
+        if (hint) hint.textContent = "";
+      }
+
+      renderTrip(currentTrip);
+    }
+
+    editBtn.addEventListener("click", () => {
+      if (!currentTrip) return;
+      openModal();
+      fillEditForm(currentTrip);
+    });
+
+    saveEditBtn.addEventListener("click", async () => {
+      try{
+        if (!currentTrip) return;
+
+        setModalStatus("Checking…", false);
+
+        const title = e_title.value.trim();
+        const adv = e_adventurers.value.trim();
+
+        if (!fp) fp = flatpickr(e_dateRange, { mode:"range", dateFormat:"Y-m-d", allowInput:true });
+        const dates = fp.selectedDates || [];
+        const start = dates[0] ? dates[0].toISOString().slice(0,10) : "";
+        const end   = dates[1] ? dates[1].toISOString().slice(0,10) : "";
+
+        if (!title) return setModalStatus("Trip title is required.", true);
+        if (!adv) return setModalStatus("Adventurers is required.", true);
+        if (!start || !end) return setModalStatus("Time frame is required (pick 2 dates).", true);
+
+        let coverUrl = currentTrip.cover_url || null;
+
+        if (removeCover){
+          coverUrl = null;
+        } else if (pendingCoverFile){
+          setModalStatus("Uploading photo…", false);
+          coverUrl = await uploadCoverPhoto(pendingCoverFile);
+        }
+
+        const updates = {
+          trip_title: title,
+          adventurers: adv,
+          start_date: start,
+          end_date: end,
+          miles_driven: e_miles.value ? Number(e_miles.value) : null,
+          states_checked: e_states.value.trim() || null,
+          parks_checked: e_parks.value.trim() || null,
+          favorite_meal: e_meal.value.trim() || null,
+          favorite_song: e_song.value.trim() || null,
+          new_slang: e_slang.value.trim() || null,
+          new_memory_unlocked: e_memory.value.trim() || null,
+          cover_url: coverUrl,
+          visibility: (document.getElementById("e_visibility")?.value || "private")
+        };
+
+        setModalStatus("Saving…", false);
+
+        const { data, error } = await sb
+          .from("trips")
+          .update(updates)
+          .eq("id", currentTrip.id)
+          .select("*")
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error("Update returned no row (check RLS UPDATE policy).");
+
+        currentTrip = data;
+        renderTrip(currentTrip);
+
+        setModalStatus("Saved ✔", false);
+        closeModal();
+      }catch(e){
+        setModalStatus("Save failed: " + (e?.message || e), true);
+      }
+    });
+
+    deleteBtn.addEventListener("click", async () => {
+      try{
+        if (!currentTrip) return;
+
+        const ok = confirm("Delete this trip? This cannot be undone.");
+        if (!ok) return;
+
+        setStatus("Deleting…", false);
+
+        const { error } = await sb
+          .from("trips")
+          .delete()
+          .eq("id", currentTrip.id);
+
+        if (error) throw error;
+
+        window.location.href = "trips.html";
+      }catch(e){
+        setStatus("Delete failed: " + (e?.message || e), true);
+      }
+    });
+
+    loadTrip();
+  </script>
+</body>
+</html>
+
