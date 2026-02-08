@@ -245,7 +245,7 @@
 <body>
   <div class="wrap">
     <div class="topbar">
-      <h1 class="title">Trip</h1>
+      <h1 class="title">Trip <span id="ownerHint" class="soft" style="font-size:12px; margin-left:10px;"></span></h1>
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <a class="btn" href="trips.html">Back</a>
         <a class="btn" href="index.html">Home</a>
@@ -356,6 +356,18 @@
 
   <script>
     const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  (async () => {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user){
+      window.location.href = "signin.html";
+      return;
+    }
+    currentUser = user;
+    // init is called after auth
+    
+  })();
 
     const statusEl = document.getElementById("status");
     const titleEl = document.getElementById("title");
@@ -538,7 +550,7 @@
 
       const { data, error } = await sb
         .from("trips")
-        .select("id, trip_title, adventurers, start_date, end_date, miles_driven, states_checked, parks_checked, favorite_meal, favorite_song, new_slang, new_memory_unlocked, cover_url, created_at")
+        .select("id, owner_id, visibility, trip_title, adventurers, start_date, end_date, miles_driven, states_checked, parks_checked, favorite_meal, favorite_song, new_slang, new_memory_unlocked, cover_url, created_at")
         .eq("id", id)
         .maybeSingle();
 
@@ -553,6 +565,21 @@
 
       setStatus("", false);
       currentTrip = data;
+
+      const isOwner = (currentTrip.owner_id === currentUser.id);
+      // If not the owner, hide edit controls (view-only)
+      if (!isOwner){
+        const editBtnEl = document.getElementById("editBtn");
+        const delBtnEl = document.getElementById("deleteBtn");
+        if (editBtnEl) editBtnEl.style.display = "none";
+        if (delBtnEl) delBtnEl.style.display = "none";
+        const hint = document.getElementById("ownerHint");
+        if (hint) hint.textContent = "View-only (friend trip)";
+      } else {
+        const hint = document.getElementById("ownerHint");
+        if (hint) hint.textContent = "";
+      }
+
       renderTrip(currentTrip);
     }
 
@@ -601,7 +628,8 @@
           favorite_song: e_song.value.trim() || null,
           new_slang: e_slang.value.trim() || null,
           new_memory_unlocked: e_memory.value.trim() || null,
-          cover_url: coverUrl
+          cover_url: coverUrl,
+          visibility: (document.getElementById("e_visibility")?.value || "private")
         };
 
         setModalStatus("Saving…", false);

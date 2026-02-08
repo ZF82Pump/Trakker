@@ -1,6 +1,6 @@
 // supabase-client.js
-// Shared Supabase client across the whole Trakker site.
-// Include after supabase-js and after supabase-config.js on every page.
+// Single shared Supabase client used across all pages.
+// IMPORTANT: include after supabase-js and after supabase-config.js.
 
 (function () {
   if (window.sb) return;
@@ -12,21 +12,13 @@
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: false,
-        storageKey: "trakker-auth"
+        detectSessionInUrl: false
       }
     }
   );
 
-  window.getAuthedUser = async function () {
+  window.getAuthedUser = async function getAuthedUser() {
     const { data: { session } } = await window.sb.auth.getSession();
     return session?.user || null;
-  };
-
-  window.requireAuth = async function (redirectTo = "signin.html") {
-    const u = await window.getAuthedUser();
-    if (u) return u;
-    window.location.href = redirectTo;
-    return null;
   };
 })();

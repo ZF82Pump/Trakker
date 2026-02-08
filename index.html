@@ -230,7 +230,17 @@ a{ color: inherit; }
       </div>
     </aside>
 
-    <main class="center" aria-hidden="true"></main>
+    <main class="center">
+      <div class="panel" aria-label="Friends feed panel" style="margin-top:0;">
+        <div class="panel-head">
+          <h2 class="panel-title">Friends feed</h2>
+          <span class="soft" id="feedStatus"></span>
+        </div>
+        <div class="panel-body" id="feedList">
+          <div class="soft">Sign in to see your friends’ newest trips.</div>
+        </div>
+      </div>
+    </main>
 
     <aside class="panel" aria-label="Upcoming trips panel">
       <div class="panel-head">
@@ -377,7 +387,89 @@ function colorFromNickname(nickname){
       }
     }
 
-    async function renderWorldBackground(){
+    
+    async function loadFriendsFeed(){
+      const feedList = document.getElementById("feedList");
+      const feedStatus = document.getElementById("feedStatus");
+
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user){
+        feedStatus.textContent = "";
+        feedList.innerHTML = `<div class="soft">Sign in to see your friends’ newest trips.</div>`;
+        return;
+      }
+
+      feedStatus.textContent = "Loading…";
+      feedList.innerHTML = "";
+
+      const { data: edges, error: edgeErr } = await sb
+        .from("friendships")
+        .select("user_a, user_b")
+        .or(`user_a.eq.${user.id},user_b.eq.${user.id}`);
+
+      if (edgeErr){
+        feedStatus.textContent = "";
+        feedList.innerHTML = `<div class="soft error">Unable to load friends.</div>`;
+        return;
+      }
+
+      const friendIds = (edges || []).map(e => (e.user_a === user.id ? e.user_b : e.user_a));
+      if (!friendIds.length){
+        feedStatus.textContent = "";
+        feedList.innerHTML = `<div class="soft">Add a friend to start seeing a feed.</div>`;
+        return;
+      }
+
+      const { data: trips, error: tripErr } = await sb
+        .from("trips")
+        .select("id, trip_title, start_date, end_date, cover_url, owner_id, created_at")
+        .in("owner_id", friendIds)
+        .eq("visibility", "friends")
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (tripErr){
+        feedStatus.textContent = "";
+        feedList.innerHTML = `<div class="soft error">Unable to load feed.</div>`;
+        return;
+      }
+
+      const { data: profs } = await sb
+        .from("profiles")
+        .select("id, nickname, username")
+        .in("id", friendIds);
+
+      const byId = {};
+      (profs || []).forEach(p => byId[p.id] = p);
+
+      if (!trips?.length){
+        feedStatus.textContent = "";
+        feedList.innerHTML = `<div class="soft">No new trips yet.</div>`;
+        return;
+      }
+
+      feedStatus.textContent = "";
+
+      for (const t of trips){
+        const who = byId[t.owner_id];
+        const whoLabel = who ? (who.nickname || ("@" + who.username)) : "Friend";
+        const el = document.createElement("a");
+        el.className = "snippet";
+        el.href = `trip.html?id=${encodeURIComponent(t.id)}`;
+        el.style.textDecoration = "none";
+        el.innerHTML = `
+          <div class="line1">
+            <div class="name">${esc(t.trip_title || "Untitled")}</div>
+            <div class="date">${esc((t.start_date||"") + " → " + (t.end_date||""))}</div>
+          </div>
+          <div class="note">${esc(whoLabel)} • ${esc(fmtDate(t.created_at))}</div>
+        `;
+        feedList.appendChild(el);
+      }
+    }
+
+
+async function renderWorldBackground(){
       const svg = d3.select("#worldSvg");
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -427,6 +519,7 @@ function colorFromNickname(nickname){
 
     loadNews();
     loadUpcomingTrips();
+    loadFriendsFeed();
     refreshAuthButton();
 
     let resizeTimer = null;

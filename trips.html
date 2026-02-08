@@ -173,6 +173,17 @@
   <script>
     const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
+  let currentUser = null;
+  (async () => {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user){
+      window.location.href = "signin.html";
+      return;
+    }
+    currentUser = user;
+    
+  })();
+
     const statusEl = document.getElementById("status");
     const gridEl = document.getElementById("grid");
     const emptyEl = document.getElementById("empty");
@@ -282,7 +293,8 @@
 
       const { data, error } = await sb
         .from("trips")
-        .select("id, trip_title, start_date, end_date, cover_url, adventurers, states_checked, parks_checked, favorite_meal, favorite_song, new_slang, new_memory_unlocked, created_at")
+        .select("id, trip_title, start_date, end_date, cover_url, owner_id, visibility, created_at")
+        .eq("owner_id", currentUser.id)
         .order("start_date", { ascending: true });
 
       if (error){
@@ -297,7 +309,7 @@
       render(allTrips);
     }
 
-    loadTrips();
+    
   </script>
 </body>
 </html>

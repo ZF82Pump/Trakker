@@ -60,7 +60,7 @@
     .grid{ display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:12px; }
     .field{ display:flex; flex-direction:column; gap:6px; }
     label{ font-size:12px; color:rgba(220,220,220,0.85); font-weight:300; }
-    input, textarea{
+    input, textarea, select{
       border-radius:14px; border:1px solid rgba(255,255,255,0.14);
       background: rgba(0,0,0,0.20);
       padding:10px 12px; font-size:13px; color:var(--text);
@@ -113,6 +113,12 @@
             <div class="field"><label>Trip title *</label><input id="tripTitle" autocomplete="off"></div>
             <div class="field"><label>Adventurers *</label><input id="adventurers" autocomplete="off"></div>
             <div class="field full"><label>Time frame *</label><input id="dateRange" autocomplete="off"></div>
+            <div class="field"><label>Trip visibility</label>
+              <select id="visibility">
+                <option value="private" selected>Private</option>
+                <option value="friends">Friends</option>
+              </select>
+            </div>
             <div class="field"><label>Miles driven</label><input id="milesDriven" type="number" min="0" step="1"></div>
             <div class="field"><label>States checked off</label><input id="statesChecked" autocomplete="off"></div>
             <div class="field"><label>National parks checked off</label><input id="parksChecked" autocomplete="off"></div>
@@ -222,7 +228,8 @@
         favorite_song: document.getElementById("favoriteSong").value.trim() || null,
         new_slang: document.getElementById("newSlang").value.trim() || null,
         new_memory_unlocked: document.getElementById("newMemory").value.trim() || null,
-        cover_url
+        cover_url,
+        visibility: (document.getElementById("visibility")?.value || "private")
       };
 
       const { error } = await sb.from("trips").insert(payload);
