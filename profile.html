@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adventure Trakker — Profile</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+
+  <style>
+    :root{
+  --text: rgba(245,245,245,0.92);
+  --muted: rgba(180,180,180,0.92);
+  --panel: rgba(255,255,255,0.10);
+  --panel-2: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.16);
+  --shadow: 0 14px 30px rgba(0,0,0,0.30);
+  --bg: #0b0b0b;
+  --danger: rgba(255,120,120,0.92);
+  --ok: rgba(150,255,190,0.85);
+}
+html, body{
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+a{ color: inherit; }
+    body{ padding: 18px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      margin-bottom: 14px;
+      max-width: 980px;
+      margin-left:auto; margin-right:auto;
+    }
+    .title{
+      margin:0;
+      font-weight:300;
+      letter-spacing:0.06em;
+      color: var(--muted);
+      font-size: clamp(22px, 2.6vw, 30px);
+      user-select:none;
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      text-decoration:none;
+      font-weight: 300;
+      font-size: 13px;
+      color: rgba(245,245,245,0.88);
+      user-select:none;
+      cursor:pointer;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap: 14px;
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .panel{
+      border-radius: 18px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(6px);
+    }
+    .panelHead{
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .panelTitle{
+      margin:0;
+      font-weight:300;
+      letter-spacing:0.05em;
+      color: rgba(220,220,220,0.85);
+      font-size: 14px;
+    }
+    .panelBody{ padding: 12px 14px 14px; background: rgba(255,255,255,0.07); }
+
+    .hero{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.20);
+      height: 160px;
+      overflow:hidden;
+      position: relative;
+    }
+    .hero img{ width:100%; height:100%; object-fit: cover; display:none; }
+    .heroOverlay{
+      position:absolute; inset:0;
+      background: radial-gradient(ellipse at top, rgba(255,255,255,0.04), rgba(0,0,0,0) 60%),
+                  radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.55) 100%);
+      pointer-events:none;
+    }
+
+    .avatarRow{ display:flex; align-items:center; gap:12px; margin-top: 12px; }
+    .avatar{
+      width: 64px; height: 64px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.35);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+      box-shadow: var(--shadow);
+      flex: 0 0 auto;
+    }
+    .avatar img{ width:100%; height:100%; object-fit: cover; display:none; }
+    .avatar .initial{ font-weight:300; font-size: 24px; }
+
+    .meta .nick{ font-size: 16px; font-weight:300; margin:0; }
+    .meta .user{ font-size: 12px; font-weight:300; color: rgba(245,245,245,0.65); margin-top: 2px; }
+
+    .row{ display:flex; flex-direction:column; gap: 8px; margin-top: 12px; }
+    label{ font-size: 12px; font-weight:300; color: rgba(245,245,245,0.70); }
+    input{
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(0,0,0,0.22);
+      color: rgba(245,245,245,0.92);
+      outline: none;
+      font-weight: 300;
+    }
+
+    .btn{
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      cursor: pointer;
+      color: rgba(245,245,245,0.92);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      margin-top: 12px;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.15); }
+
+    .soft{ font-size: 12px; font-weight:300; color: rgba(245,245,245,0.60); }
+    .soft.error{ color: var(--danger); }
+    .soft.ok{ color: var(--ok); }
+
+    .stack{ display:flex; flex-direction:column; gap:10px; }
+
+    .listItem{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.18);
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.75);
+    }
+
+    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <h1 class="title">Profile</h1>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="pill" href="index.html">Home</a>
+      <button id="signoutBtn" class="pill" type="button">Sign out</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="panelHead">
+        <h2 class="panelTitle">You</h2>
+        <span class="soft" id="status"></span>
+      </div>
+      <div class="panelBody">
+        <div class="hero">
+          <img id="bgImg" alt="profile background"/>
+          <div class="heroOverlay"></div>
+        </div>
+
+        <div class="avatarRow">
+          <div class="avatar" id="avatarBox">
+            <img id="avatarImg" alt="avatar"/>
+            <div class="initial" id="avatarInitial">A</div>
+          </div>
+          <div class="meta">
+            <p class="nick" id="nickText">—</p>
+            <div class="user" id="userText">—</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="nickInput">Nickname</label>
+          <input id="nickInput" placeholder="Update your nickname"/>
+        </div>
+
+        <div class="row">
+          <label for="avatarFile">Update avatar (optional)</label>
+          <input id="avatarFile" type="file" accept="image/*"/>
+        </div>
+
+        <div class="row">
+          <label for="bgFile">Update background (optional)</label>
+          <input id="bgFile" type="file" accept="image/*"/>
+        </div>
+
+        <button id="saveBtn" class="btn">Save changes</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panelHead">
+        <h2 class="panelTitle">Friends</h2>
+        <span class="soft">coming soon</span>
+      </div>
+      <div class="panelBody">
+        <div class="listItem">Friend requests &amp; adding friends will be here later.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+function usernameToEmail(username){
+  return `${String(username).trim().toLowerCase()}@trakker.site`;
+}
+function normalizeUsername(username){
+  return String(username || "").trim().toLowerCase();
+}
+function isValidUsername(username){
+  // lowercase letters, numbers, underscore, dot. 3-24 chars.
+  return /^[a-z0-9._]{3,24}$/.test(username);
+}
+function hashToHue(str){
+  let h = 0;
+  for (let i=0;i<str.length;i++){
+    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h % 360;
+}
+function initialFromNickname(nickname){
+  const n = String(nickname || "").trim();
+  if (!n) return "?";
+  const ch = n[0].toUpperCase();
+  return /[A-Z0-9]/.test(ch) ? ch : "?";
+}
+function colorFromNickname(nickname){
+  const hue = hashToHue(String(nickname||""));
+  return `hsl(${hue} 70% 60%)`;
+}
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const statusEl = document.getElementById("status");
+    const nickText = document.getElementById("nickText");
+    const userText = document.getElementById("userText");
+    const nickInput = document.getElementById("nickInput");
+
+    const avatarImg = document.getElementById("avatarImg");
+    const avatarInitial = document.getElementById("avatarInitial");
+    const avatarBox = document.getElementById("avatarBox");
+
+    const bgImg = document.getElementById("bgImg");
+
+    const avatarFile = document.getElementById("avatarFile");
+    const bgFile = document.getElementById("bgFile");
+
+    let currentUser = null;
+
+    function setStatus(msg, type){
+      statusEl.className = "soft" + (type ? (" " + type) : "");
+      statusEl.textContent = msg || "";
+    }
+
+    function applyAvatar(profile){
+      const url = profile?.avatar_url;
+      const init = profile?.avatar_initial || initialFromNickname(profile?.nickname);
+      const color = profile?.avatar_color || colorFromNickname(profile?.nickname || "adventure");
+
+      if (url){
+        avatarImg.src = url;
+        avatarImg.style.display = "block";
+        avatarInitial.style.display = "none";
+      } else {
+        avatarImg.style.display = "none";
+        avatarInitial.style.display = "block";
+        avatarInitial.textContent = init;
+        avatarInitial.style.color = color;
+      }
+      avatarBox.style.background = "rgba(0,0,0,0.35)";
+    }
+
+    function applyBackground(profile){
+      const url = profile?.background_url;
+      if (url){
+        bgImg.src = url;
+        bgImg.style.display = "block";
+      } else {
+        bgImg.style.display = "none";
+      }
+    }
+
+    async function uploadToBucket(bucket, path, file){
+      const { error } = await sb.storage.from(bucket).upload(path, file, { upsert:true, cacheControl:"3600" });
+      if (error) throw error;
+      const { data } = sb.storage.from(bucket).getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    async function loadProfile(){
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user){
+        window.location.href = "signin.html";
+        return;
+      }
+      currentUser = user;
+
+      const { data, error } = await sb.from("profiles")
+        .select("id, username, nickname, avatar_url, avatar_initial, avatar_color, background_url")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error){
+        setStatus("Unable to load profile.", "error");
+        return;
+      }
+      if (!data){
+        window.location.href = "create.html";
+        return;
+      }
+
+      nickText.textContent = data.nickname || "—";
+      userText.textContent = "@" + (data.username || "—");
+      nickInput.value = data.nickname || "";
+
+      applyAvatar(data);
+      applyBackground(data);
+      setStatus("");
+    }
+
+    async function saveChanges(){
+      if (!currentUser) return;
+
+      setStatus("Saving…");
+
+      const newNick = String(nickInput.value || "").trim();
+      if (!newNick){
+        setStatus("Nickname is required.", "error");
+        return;
+      }
+
+      const updates = {
+        nickname: newNick,
+        avatar_initial: initialFromNickname(newNick),
+        avatar_color: colorFromNickname(newNick),
+        updated_at: new Date().toISOString()
+      };
+
+      const avatar = avatarFile.files && avatarFile.files[0];
+      if (avatar){
+        try{
+          const ext = (avatar.name.split(".").pop() || "png").toLowerCase();
+          const safeExt = ext.match(/^[a-z0-9]+$/) ? ext : "png";
+          const path = `avatars/${currentUser.id}/avatar_${Date.now()}.${safeExt}`;
+          updates.avatar_url = await uploadToBucket("profile-avatars", path, avatar);
+        } catch (e){
+          console.warn(e);
+          setStatus("Avatar upload failed.", "error");
+          return;
+        }
+      }
+
+      const bg = bgFile.files && bgFile.files[0];
+      if (bg){
+        try{
+          const ext = (bg.name.split(".").pop() || "jpg").toLowerCase();
+          const safeExt = ext.match(/^[a-z0-9]+$/) ? ext : "jpg";
+          const path = `backgrounds/${currentUser.id}/bg_${Date.now()}.${safeExt}`;
+          updates.background_url = await uploadToBucket("profile-backgrounds", path, bg);
+        } catch (e){
+          console.warn(e);
+          setStatus("Background upload failed.", "error");
+          return;
+        }
+      }
+
+      const { error } = await sb.from("profiles")
+        .update(updates)
+        .eq("id", currentUser.id);
+
+      if (error){
+        setStatus(error.message || "Save failed.", "error");
+        return;
+      }
+
+      setStatus("Saved.", "ok");
+      await await refreshFriendsUI();
+
+    
+    // --- Friends & Requests ---
+    const friendsStatusEl = document.getElementById("friendsStatus");
+    const incomingList = document.getElementById("incomingList");
+    const outgoingList = document.getElementById("outgoingList");
+    const friendsList = document.getElementById("friendsList");
+    const friendSearchEl = document.getElementById("friendSearch");
+    const sendRequestBtn = document.getElementById("sendRequestBtn");
+
+    function setFriendsStatus(msg, type){
+      friendsStatusEl.className = "soft" + (type ? (" " + type) : "");
+      friendsStatusEl.textContent = msg || "";
+    }
+
+    function mkRow(html){
+      const d = document.createElement("div");
+      d.className = "listItem";
+      d.innerHTML = html;
+      return d;
+    }
+
+    function friendIdFromEdge(edge, me){
+      return (edge.user_a === me) ? edge.user_b : edge.user_a;
+    }
+
+    async function refreshFriendsUI(){
+      if (!currentUser) return;
+
+      // Friends
+      const { data: edges, error: edgeErr } = await sb
+        .from("friendships")
+        .select("id, user_a, user_b, created_at")
+        .or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`)
+        .order("created_at", { ascending: false });
+
+      if (edgeErr){
+        setFriendsStatus("Unable to load friends.", "error");
+      } else {
+        setFriendsStatus("");
+      }
+
+      const friendIds = (edges || []).map(e => friendIdFromEdge(e, currentUser.id));
+
+      let profilesById = {};
+      if (friendIds.length){
+        const { data: profs } = await sb
+          .from("profiles")
+          .select("id, username, nickname, avatar_url, avatar_initial, avatar_color")
+          .in("id", friendIds);
+
+        (profs || []).forEach(p => profilesById[p.id] = p);
+      }
+
+      friendsList.innerHTML = "";
+      if (!friendIds.length){
+        friendsList.appendChild(mkRow(`<span style="opacity:.75">No friends yet.</span>`));
+      } else {
+        for (const fid of friendIds){
+          const p = profilesById[fid] || {};
+          const label = esc(p.nickname || p.username || "Unknown");
+          const uname = p.username ? ("@" + esc(p.username)) : "";
+          friendsList.appendChild(mkRow(`
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="min-width:0">
+                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                <div style="font-size:12px; opacity:.7">${uname}</div>
+              </div>
+              <button class="pill" type="button" data-unfriend="${fid}" style="border:none; cursor:pointer;">Unfriend</button>
+            </div>
+          `));
+        }
+      }
+
+      // Incoming requests
+      const { data: incoming, error: inErr } = await sb
+        .from("friend_requests")
+        .select("id, from_user, to_user, status, created_at")
+        .eq("to_user", currentUser.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      incomingList.innerHTML = "";
+      if (inErr){
+        incomingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
+      } else if (!incoming?.length){
+        incomingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
+      } else {
+        const fromIds = incoming.map(r => r.from_user);
+        const { data: fromProfs } = await sb.from("profiles")
+          .select("id, username, nickname")
+          .in("id", fromIds);
+        const map = {};
+        (fromProfs||[]).forEach(p => map[p.id]=p);
+
+        for (const r of incoming){
+          const p = map[r.from_user] || {};
+          const label = esc(p.nickname || p.username || "Unknown");
+          incomingList.appendChild(mkRow(`
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="min-width:0">
+                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="pill" type="button" data-accept="${r.id}" style="border:none; cursor:pointer;">Accept</button>
+                <button class="pill" type="button" data-decline="${r.id}" style="border:none; cursor:pointer;">Decline</button>
+              </div>
+            </div>
+          `));
+        }
+      }
+
+      // Outgoing requests
+      const { data: outgoing, error: outErr } = await sb
+        .from("friend_requests")
+        .select("id, from_user, to_user, status, created_at")
+        .eq("from_user", currentUser.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      outgoingList.innerHTML = "";
+      if (outErr){
+        outgoingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
+      } else if (!outgoing?.length){
+        outgoingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
+      } else {
+        const toIds = outgoing.map(r => r.to_user);
+        const { data: toProfs } = await sb.from("profiles")
+          .select("id, username, nickname")
+          .in("id", toIds);
+        const map = {};
+        (toProfs||[]).forEach(p => map[p.id]=p);
+
+        for (const r of outgoing){
+          const p = map[r.to_user] || {};
+          const label = esc(p.nickname || p.username || "Unknown");
+          outgoingList.appendChild(mkRow(`
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="min-width:0">
+                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
+              </div>
+              <button class="pill" type="button" data-cancel="${r.id}" style="border:none; cursor:pointer;">Cancel</button>
+            </div>
+          `));
+        }
+      }
+    }
+
+    async function sendFriendRequest(){
+      if (!currentUser) return;
+      const username = normalizeUsername(friendSearchEl.value);
+      if (!isValidUsername(username)){
+        setFriendsStatus("Enter a valid username.", "error");
+        return;
+      }
+      // Can't friend yourself
+      if (username === normalizeUsername(userText.textContent.replace(/^@/, ""))){
+        setFriendsStatus("That’s you 🙂", "error");
+        return;
+      }
+
+      setFriendsStatus("Sending…");
+      // Find user by username
+      const { data: target, error: findErr } = await sb.from("profiles")
+        .select("id, username")
+        .eq("username", username)
+        .maybeSingle();
+
+      if (findErr || !target){
+        setFriendsStatus("User not found.", "error");
+        return;
+      }
+      if (target.id === currentUser.id){
+        setFriendsStatus("That’s you 🙂", "error");
+        return;
+      }
+
+      // Check already friends
+      const a = currentUser.id < target.id ? currentUser.id : target.id;
+      const b = currentUser.id < target.id ? target.id : currentUser.id;
+
+      const { data: existingFriend } = await sb.from("friendships")
+        .select("id").eq("user_a", a).eq("user_b", b).maybeSingle();
+      if (existingFriend){
+        setFriendsStatus("You’re already friends.", "ok");
+        await refreshFriendsUI();
+        return;
+      }
+
+      // Check existing request either direction
+      const { data: existingReq } = await sb.from("friend_requests")
+        .select("id, from_user, to_user, status")
+        .or(`and(from_user.eq.${currentUser.id},to_user.eq.${target.id}),and(from_user.eq.${target.id},to_user.eq.${currentUser.id})`)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existingReq){
+        setFriendsStatus("Request already pending.", "ok");
+        await refreshFriendsUI();
+        return;
+      }
+
+      const { error: insErr } = await sb.from("friend_requests").insert([{
+        from_user: currentUser.id,
+        to_user: target.id,
+        status: "pending"
+      }]);
+
+      if (insErr){
+        setFriendsStatus("Send failed: " + insErr.message, "error");
+        return;
+      }
+
+      setFriendsStatus("Request sent.", "ok");
+      friendSearchEl.value = "";
+      await refreshFriendsUI();
+    }
+
+    async function acceptRequest(reqId){
+      if (!currentUser) return;
+      setFriendsStatus("Accepting…");
+      // Fetch request to know from/to
+      const { data: req, error } = await sb.from("friend_requests")
+        .select("id, from_user, to_user, status")
+        .eq("id", reqId)
+        .maybeSingle();
+
+      if (error || !req){
+        setFriendsStatus("Unable to load request.", "error");
+        return;
+      }
+
+      const from = req.from_user;
+      const to = req.to_user;
+
+      const a = from < to ? from : to;
+      const b = from < to ? to : from;
+
+      // Create friendship edge
+      const { error: edgeErr } = await sb.from("friendships").insert([{
+        user_a: a,
+        user_b: b
+      }]);
+
+      if (edgeErr && !/duplicate key/.test(edgeErr.message || "")){
+        setFriendsStatus("Accept failed: " + edgeErr.message, "error");
+        return;
+      }
+
+      // Mark request accepted
+      const { error: upErr } = await sb.from("friend_requests")
+        .update({ status: "accepted" })
+        .eq("id", reqId);
+
+      if (upErr){
+        setFriendsStatus("Accept failed: " + upErr.message, "error");
+        return;
+      }
+
+      setFriendsStatus("Friends ✔", "ok");
+      await refreshFriendsUI();
+    }
+
+    async function declineOrCancel(reqId){
+      if (!currentUser) return;
+      const { error } = await sb.from("friend_requests")
+        .update({ status: "declined" })
+        .eq("id", reqId);
+      if (error){
+        setFriendsStatus("Update failed: " + error.message, "error");
+        return;
+      }
+      await refreshFriendsUI();
+    }
+
+    async function unfriend(friendId){
+      if (!currentUser) return;
+      const a = currentUser.id < friendId ? currentUser.id : friendId;
+      const b = currentUser.id < friendId ? friendId : currentUser.id;
+      const { error } = await sb.from("friendships").delete().eq("user_a", a).eq("user_b", b);
+      if (error){
+        setFriendsStatus("Unfriend failed: " + error.message, "error");
+        return;
+      }
+      await refreshFriendsUI();
+    }
+
+    sendRequestBtn.addEventListener("click", sendFriendRequest);
+    friendSearchEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendFriendRequest(); });
+
+    document.addEventListener("click", (e)=>{
+      const t = e.target;
+      const accept = t?.getAttribute?.("data-accept");
+      const decline = t?.getAttribute?.("data-decline");
+      const cancel = t?.getAttribute?.("data-cancel");
+      const unfr = t?.getAttribute?.("data-unfriend");
+      if (accept) acceptRequest(accept);
+      if (decline) declineOrCancel(decline);
+      if (cancel) declineOrCancel(cancel);
+      if (unfr) unfriend(unfr);
+    });
+
+
+    loadProfile();
+      avatarFile.value = "";
+      bgFile.value = "";
+    }
+
+    document.getElementById("saveBtn").addEventListener("click", saveChanges);
+    document.getElementById("signoutBtn").addEventListener("click", async () => {
+      await sb.auth.signOut();
+      window.location.href = "index.html";
+    });
+
+    await refreshFriendsUI();
+
+    
+    // --- Friends & Requests ---
+    const friendsStatusEl = document.getElementById("friendsStatus");
+    const incomingList = document.getElementById("incomingList");
+    const outgoingList = document.getElementById("outgoingList");
+    const friendsList = document.getElementById("friendsList");
+    const friendSearchEl = document.getElementById("friendSearch");
+    const sendRequestBtn = document.getElementById("sendRequestBtn");
+
+    function setFriendsStatus(msg, type){
+      friendsStatusEl.className = "soft" + (type ? (" " + type) : "");
+      friendsStatusEl.textContent = msg || "";
+    }
+
+    function mkRow(html){
+      const d = document.createElement("div");
+      d.className = "listItem";
+      d.innerHTML = html;
+      return d;
+    }
+
+    function friendIdFromEdge(edge, me){
+      return (edge.user_a === me) ? edge.user_b : edge.user_a;
+    }
+
+    async function refreshFriendsUI(){
+      if (!currentUser) return;
+
+      // Friends
+      const { data: edges, error: edgeErr } = await sb
+        .from("friendships")
+        .select("id, user_a, user_b, created_at")
+        .or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`)
+        .order("created_at", { ascending: false });
+
+      if (edgeErr){
+        setFriendsStatus("Unable to load friends.", "error");
+      } else {
+        setFriendsStatus("");
+      }
+
+      const friendIds = (edges || []).map(e => friendIdFromEdge(e, currentUser.id));
+
+      let profilesById = {};
+      if (friendIds.length){
+        const { data: profs } = await sb
+          .from("profiles")
+          .select("id, username, nickname, avatar_url, avatar_initial, avatar_color")
+          .in("id", friendIds);
+
+        (profs || []).forEach(p => profilesById[p.id] = p);
+      }
+
+      friendsList.innerHTML = "";
+      if (!friendIds.length){
+        friendsList.appendChild(mkRow(`<span style="opacity:.75">No friends yet.</span>`));
+      } else {
+        for (const fid of friendIds){
+          const p = profilesById[fid] || {};
+          const label = esc(p.nickname || p.username || "Unknown");
+          const uname = p.username ? ("@" + esc(p.username)) : "";
+          friendsList.appendChild(mkRow(`
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="min-width:0">
+                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                <div style="font-size:12px; opacity:.7">${uname}</div>
+              </div>
+              <button class="pill" type="button" data-unfriend="${fid}" style="border:none; cursor:pointer;">Unfriend</button>
+            </div>
+          `));
+        }
+      }
+
+      // Incoming requests
+      const { data: incoming, error: inErr } = await sb
+        .from("friend_requests")
+        .select("id, from_user, to_user, status, created_at")
+        .eq("to_user", currentUser.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      incomingList.innerHTML = "";
+      if (inErr){
+        incomingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
+      } else if (!incoming?.length){
+        incomingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
+      } else {
+        const fromIds = incoming.map(r => r.from_user);
+        const { data: fromProfs } = await sb.from("profiles")
+          .select("id, username, nickname")
+          .in("id", fromIds);
+        const map = {};
+        (fromProfs||[]).forEach(p => map[p.id]=p);
+
+        for (const r of incoming){
+          const p = map[r.from_user] || {};
+          const label = esc(p.nickname || p.username || "Unknown");
+          incomingList.appendChild(mkRow(`
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="min-width:0">
+                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button class="pill" type="button" data-accept="${r.id}" style="border:none; cursor:pointer;">Accept</button>
+                <button class="pill" type="button" data-decline="${r.id}" style="border:none; cursor:pointer;">Decline</button>
+              </div>
+            </div>
+          `));
+        }
+      }
+
+      // Outgoing requests
+      const { data: outgoing, error: outErr } = await sb
+        .from("friend_requests")
+        .select("id, from_user, to_user, status, created_at")
+        .eq("from_user", currentUser.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      outgoingList.innerHTML = "";
+      if (outErr){
+        outgoingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
+      } else if (!outgoing?.length){
+        outgoingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
+      } else {
+        const toIds = outgoing.map(r => r.to_user);
+        const { data: toProfs } = await sb.from("profiles")
+          .select("id, username, nickname")
+          .in("id", toIds);
+        const map = {};
+        (toProfs||[]).forEach(p => map[p.id]=p);
+
+        for (const r of outgoing){
+          const p = map[r.to_user] || {};
+          const label = esc(p.nickname || p.username || "Unknown");
+          outgoingList.appendChild(mkRow(`
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
+              <div style="min-width:0">
+                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
+              </div>
+              <button class="pill" type="button" data-cancel="${r.id}" style="border:none; cursor:pointer;">Cancel</button>
+            </div>
+          `));
+        }
+      }
+    }
+
+    async function sendFriendRequest(){
+      if (!currentUser) return;
+      const username = normalizeUsername(friendSearchEl.value);
+      if (!isValidUsername(username)){
+        setFriendsStatus("Enter a valid username.", "error");
+        return;
+      }
+      // Can't friend yourself
+      if (username === normalizeUsername(userText.textContent.replace(/^@/, ""))){
+        setFriendsStatus("That’s you 🙂", "error");
+        return;
+      }
+
+      setFriendsStatus("Sending…");
+      // Find user by username
+      const { data: target, error: findErr } = await sb.from("profiles")
+        .select("id, username")
+        .eq("username", username)
+        .maybeSingle();
+
+      if (findErr || !target){
+        setFriendsStatus("User not found.", "error");
+        return;
+      }
+      if (target.id === currentUser.id){
+        setFriendsStatus("That’s you 🙂", "error");
+        return;
+      }
+
+      // Check already friends
+      const a = currentUser.id < target.id ? currentUser.id : target.id;
+      const b = currentUser.id < target.id ? target.id : currentUser.id;
+
+      const { data: existingFriend } = await sb.from("friendships")
+        .select("id").eq("user_a", a).eq("user_b", b).maybeSingle();
+      if (existingFriend){
+        setFriendsStatus("You’re already friends.", "ok");
+        await refreshFriendsUI();
+        return;
+      }
+
+      // Check existing request either direction
+      const { data: existingReq } = await sb.from("friend_requests")
+        .select("id, from_user, to_user, status")
+        .or(`and(from_user.eq.${currentUser.id},to_user.eq.${target.id}),and(from_user.eq.${target.id},to_user.eq.${currentUser.id})`)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existingReq){
+        setFriendsStatus("Request already pending.", "ok");
+        await refreshFriendsUI();
+        return;
+      }
+
+      const { error: insErr } = await sb.from("friend_requests").insert([{
+        from_user: currentUser.id,
+        to_user: target.id,
+        status: "pending"
+      }]);
+
+      if (insErr){
+        setFriendsStatus("Send failed: " + insErr.message, "error");
+        return;
+      }
+
+      setFriendsStatus("Request sent.", "ok");
+      friendSearchEl.value = "";
+      await refreshFriendsUI();
+    }
+
+    async function acceptRequest(reqId){
+      if (!currentUser) return;
+      setFriendsStatus("Accepting…");
+      // Fetch request to know from/to
+      const { data: req, error } = await sb.from("friend_requests")
+        .select("id, from_user, to_user, status")
+        .eq("id", reqId)
+        .maybeSingle();
+
+      if (error || !req){
+        setFriendsStatus("Unable to load request.", "error");
+        return;
+      }
+
+      const from = req.from_user;
+      const to = req.to_user;
+
+      const a = from < to ? from : to;
+      const b = from < to ? to : from;
+
+      // Create friendship edge
+      const { error: edgeErr } = await sb.from("friendships").insert([{
+        user_a: a,
+        user_b: b
+      }]);
+
+      if (edgeErr && !/duplicate key/.test(edgeErr.message || "")){
+        setFriendsStatus("Accept failed: " + edgeErr.message, "error");
+        return;
+      }
+
+      // Mark request accepted
+      const { error: upErr } = await sb.from("friend_requests")
+        .update({ status: "accepted" })
+        .eq("id", reqId);
+
+      if (upErr){
+        setFriendsStatus("Accept failed: " + upErr.message, "error");
+        return;
+      }
+
+      setFriendsStatus("Friends ✔", "ok");
+      await refreshFriendsUI();
+    }
+
+    async function declineOrCancel(reqId){
+      if (!currentUser) return;
+      const { error } = await sb.from("friend_requests")
+        .update({ status: "declined" })
+        .eq("id", reqId);
+      if (error){
+        setFriendsStatus("Update failed: " + error.message, "error");
+        return;
+      }
+      await refreshFriendsUI();
+    }
+
+    async function unfriend(friendId){
+      if (!currentUser) return;
+      const a = currentUser.id < friendId ? currentUser.id : friendId;
+      const b = currentUser.id < friendId ? friendId : currentUser.id;
+      const { error } = await sb.from("friendships").delete().eq("user_a", a).eq("user_b", b);
+      if (error){
+        setFriendsStatus("Unfriend failed: " + error.message, "error");
+        return;
+      }
+      await refreshFriendsUI();
+    }
+
+    sendRequestBtn.addEventListener("click", sendFriendRequest);
+    friendSearchEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendFriendRequest(); });
+
+    document.addEventListener("click", (e)=>{
+      const t = e.target;
+      const accept = t?.getAttribute?.("data-accept");
+      const decline = t?.getAttribute?.("data-decline");
+      const cancel = t?.getAttribute?.("data-cancel");
+      const unfr = t?.getAttribute?.("data-unfriend");
+      if (accept) acceptRequest(accept);
+      if (decline) declineOrCancel(decline);
+      if (cancel) declineOrCancel(cancel);
+      if (unfr) unfriend(unfr);
+    });
+
+
+    loadProfile();
+  </script>
+</body>
+</html>
