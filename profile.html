@@ -10,30 +10,31 @@
 
   <style>
     :root{
-  --text: rgba(245,245,245,0.92);
-  --muted: rgba(180,180,180,0.92);
-  --panel: rgba(255,255,255,0.10);
-  --panel-2: rgba(255,255,255,0.07);
-  --border: rgba(255,255,255,0.16);
-  --shadow: 0 14px 30px rgba(0,0,0,0.30);
-  --bg: #0b0b0b;
-  --danger: rgba(255,120,120,0.92);
-  --ok: rgba(150,255,190,0.85);
-}
-html, body{
-  height: 100%;
-  margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-a{ color: inherit; }
-    body{ padding: 18px; }
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --panel-2: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 14px 30px rgba(0,0,0,0.30);
+      --bg: #0b0b0b;
+      --danger: rgba(255,120,120,0.92);
+      --ok: rgba(150,255,190,0.85);
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    a{ color: inherit; }
+
+    body{ padding: 18px; box-sizing:border-box; }
 
     .topbar{
       display:flex; align-items:center; justify-content:space-between; gap:12px;
       margin-bottom: 14px;
-      max-width: 980px;
+      max-width: 1100px;
       margin-left:auto; margin-right:auto;
     }
     .title{
@@ -58,12 +59,13 @@ a{ color: inherit; }
       user-select:none;
       cursor:pointer;
     }
+    .pill:hover{ background: rgba(255,255,255,0.13); }
 
     .grid{
       display:grid;
-      grid-template-columns: 360px 1fr;
+      grid-template-columns: 380px 1fr;
       gap: 14px;
-      max-width: 980px;
+      max-width: 1100px;
       margin: 0 auto;
     }
     .panel{
@@ -153,19 +155,72 @@ a{ color: inherit; }
     .soft.error{ color: var(--danger); }
     .soft.ok{ color: var(--ok); }
 
-    .stack{ display:flex; flex-direction:column; gap:10px; }
+    .sectionTitle{
+      margin: 12px 0 8px;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      color: rgba(220,220,220,0.78);
+      font-size: 12px;
+      user-select:none;
+    }
 
-    .listItem{
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+    }
+
+    .item{
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,0.14);
       background: rgba(0,0,0,0.18);
       padding: 10px 12px;
-      font-size: 12px;
-      font-weight: 300;
-      color: rgba(245,245,245,0.75);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
     }
+    .itemLeft{
+      min-width: 0;
+      display:flex;
+      flex-direction:column;
+      gap: 2px;
+    }
+    .itemName{
+      font-size: 12.5px;
+      font-weight:300;
+      color: rgba(245,245,245,0.88);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width: 520px;
+    }
+    .itemSub{
+      font-size: 11.5px;
+      font-weight:300;
+      color: rgba(245,245,245,0.62);
+    }
+    .miniActions{
+      display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .miniBtn{
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.08);
+      color: rgba(245,245,245,0.85);
+      padding: 7px 10px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:300;
+      font-size: 12px;
+      user-select:none;
+    }
+    .miniBtn:hover{ background: rgba(255,255,255,0.12); }
+    .miniBtn.danger{ border-color: rgba(255,120,120,0.30); color: rgba(255,150,150,0.88); }
 
-    @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+    @media (max-width: 920px){
+      .grid{ grid-template-columns: 1fr; }
+      .itemName{ max-width: 100%; }
+    }
   </style>
 </head>
 
@@ -179,6 +234,7 @@ a{ color: inherit; }
   </div>
 
   <div class="grid">
+    <!-- YOU -->
     <div class="panel">
       <div class="panelHead">
         <h2 class="panelTitle">You</h2>
@@ -220,53 +276,65 @@ a{ color: inherit; }
       </div>
     </div>
 
+    <!-- FRIENDS -->
     <div class="panel">
       <div class="panelHead">
         <h2 class="panelTitle">Friends</h2>
-        <span class="soft">coming soon</span>
+        <span class="soft" id="friendsStatus"></span>
       </div>
       <div class="panelBody">
-        <div class="listItem">Friend requests &amp; adding friends will be here later.</div>
+        <div class="row" style="margin-top:0;">
+          <label for="friendSearch">Add friend by username</label>
+          <input id="friendSearch" placeholder="username (ex: ethan.m)" />
+          <button id="sendRequestBtn" class="btn" style="margin-top:10px;">Send friend request</button>
+          <div class="soft" id="searchHint" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="sectionTitle">Incoming requests</div>
+        <div class="list" id="incomingList"><div class="soft">Loading…</div></div>
+
+        <div class="sectionTitle">Outgoing requests</div>
+        <div class="list" id="outgoingList"><div class="soft">Loading…</div></div>
+
+        <div class="sectionTitle">Friends</div>
+        <div class="list" id="friendsList"><div class="soft">Loading…</div></div>
       </div>
     </div>
   </div>
 
   <script>
+    function hashToHue(str){
+      let h = 0;
+      for (let i=0;i<str.length;i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+      return h % 360;
+    }
+    function initialFromNickname(nickname){
+      const n = String(nickname || "").trim();
+      if (!n) return "?";
+      const ch = n[0].toUpperCase();
+      return /[A-Z0-9]/.test(ch) ? ch : "?";
+    }
+    function colorFromNickname(nickname){
+      const hue = hashToHue(String(nickname||""));
+      return `hsl(${hue} 70% 60%)`;
+    }
     function esc(s){
-  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[c]));
-}
-function usernameToEmail(username){
-  return `${String(username).trim().toLowerCase()}@trakker.site`;
-}
-function normalizeUsername(username){
-  return String(username || "").trim().toLowerCase();
-}
-function isValidUsername(username){
-  // lowercase letters, numbers, underscore, dot. 3-24 chars.
-  return /^[a-z0-9._]{3,24}$/.test(username);
-}
-function hashToHue(str){
-  let h = 0;
-  for (let i=0;i<str.length;i++){
-    h = (h * 31 + str.charCodeAt(i)) >>> 0;
-  }
-  return h % 360;
-}
-function initialFromNickname(nickname){
-  const n = String(nickname || "").trim();
-  if (!n) return "?";
-  const ch = n[0].toUpperCase();
-  return /[A-Z0-9]/.test(ch) ? ch : "?";
-}
-function colorFromNickname(nickname){
-  const hue = hashToHue(String(nickname||""));
-  return `hsl(${hue} 70% 60%)`;
-}
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+    function normalizeUsername(username){
+      return String(username || "").trim().toLowerCase();
+    }
+    function isValidUsername(username){
+      return /^[a-z0-9._]{3,24}$/.test(username);
+    }
+
     const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
     const statusEl = document.getElementById("status");
+    const friendsStatusEl = document.getElementById("friendsStatus");
+
     const nickText = document.getElementById("nickText");
     const userText = document.getElementById("userText");
     const nickInput = document.getElementById("nickInput");
@@ -280,11 +348,20 @@ function colorFromNickname(nickname){
     const avatarFile = document.getElementById("avatarFile");
     const bgFile = document.getElementById("bgFile");
 
-    let currentUser = null;
+    const friendSearch = document.getElementById("friendSearch");
+    const sendRequestBtn = document.getElementById("sendRequestBtn");
+    const searchHint = document.getElementById("searchHint");
 
-    function setStatus(msg, type){
-      statusEl.className = "soft" + (type ? (" " + type) : "");
-      statusEl.textContent = msg || "";
+    const incomingList = document.getElementById("incomingList");
+    const outgoingList = document.getElementById("outgoingList");
+    const friendsList = document.getElementById("friendsList");
+
+    let currentUser = null;
+    let myProfile = null;
+
+    function setStatus(el, msg, type){
+      el.className = "soft" + (type ? (" " + type) : "");
+      el.textContent = msg || "";
     }
 
     function applyAvatar(profile){
@@ -322,6 +399,74 @@ function colorFromNickname(nickname){
       return data?.publicUrl || null;
     }
 
+    function renderEmpty(listEl, msg){
+      listEl.innerHTML = "";
+      const d = document.createElement("div");
+      d.className = "soft";
+      d.textContent = msg;
+      listEl.appendChild(d);
+    }
+
+    function renderRequestItem(req, otherProfile, isIncoming){
+      const row = document.createElement("div");
+      row.className = "item";
+      const name = otherProfile?.nickname || otherProfile?.username || "Unknown";
+      const uname = otherProfile?.username ? ("@" + otherProfile.username) : "";
+      row.innerHTML = `
+        <div class="itemLeft">
+          <div class="itemName">${esc(name)} <span class="soft">${esc(uname)}</span></div>
+          <div class="itemSub">${isIncoming ? "Wants to be friends" : "Pending"}</div>
+        </div>
+        <div class="miniActions"></div>
+      `;
+      const actions = row.querySelector(".miniActions");
+
+      if (isIncoming){
+        const accept = document.createElement("button");
+        accept.className = "miniBtn";
+        accept.textContent = "Accept";
+        accept.onclick = () => acceptRequest(req);
+        const decline = document.createElement("button");
+        decline.className = "miniBtn danger";
+        decline.textContent = "Decline";
+        decline.onclick = () => declineRequest(req);
+        actions.appendChild(accept);
+        actions.appendChild(decline);
+      } else {
+        const cancel = document.createElement("button");
+        cancel.className = "miniBtn danger";
+        cancel.textContent = "Cancel";
+        cancel.onclick = () => cancelRequest(req);
+        actions.appendChild(cancel);
+      }
+
+      return row;
+    }
+
+    function renderFriendItem(friendProfile, otherId){
+      const row = document.createElement("div");
+      row.className = "item";
+      const name = friendProfile?.nickname || friendProfile?.username || "Unknown";
+      const uname = friendProfile?.username ? ("@" + friendProfile.username) : "";
+
+      row.innerHTML = `
+        <div class="itemLeft">
+          <div class="itemName">${esc(name)} <span class="soft">${esc(uname)}</span></div>
+          <div class="itemSub">Friend</div>
+        </div>
+        <div class="miniActions"></div>
+      `;
+
+      const actions = row.querySelector(".miniActions");
+      const unfriend = document.createElement("button");
+      unfriend.className = "miniBtn danger";
+      unfriend.textContent = "Unfriend";
+      unfriend.onclick = () => unfriendUser(otherId);
+      actions.appendChild(unfriend);
+
+      return row;
+    }
+
     async function loadProfile(){
       const { data: { user } } = await sb.auth.getUser();
       if (!user){
@@ -336,13 +481,14 @@ function colorFromNickname(nickname){
         .maybeSingle();
 
       if (error){
-        setStatus("Unable to load profile.", "error");
+        setStatus(statusEl, "Unable to load profile.", "error");
         return;
       }
       if (!data){
         window.location.href = "create.html";
         return;
       }
+      myProfile = data;
 
       nickText.textContent = data.nickname || "—";
       userText.textContent = "@" + (data.username || "—");
@@ -350,17 +496,17 @@ function colorFromNickname(nickname){
 
       applyAvatar(data);
       applyBackground(data);
-      setStatus("");
+      setStatus(statusEl, "");
     }
 
     async function saveChanges(){
       if (!currentUser) return;
 
-      setStatus("Saving…");
+      setStatus(statusEl, "Saving…");
 
       const newNick = String(nickInput.value || "").trim();
       if (!newNick){
-        setStatus("Nickname is required.", "error");
+        setStatus(statusEl, "Nickname is required.", "error");
         return;
       }
 
@@ -380,7 +526,7 @@ function colorFromNickname(nickname){
           updates.avatar_url = await uploadToBucket("profile-avatars", path, avatar);
         } catch (e){
           console.warn(e);
-          setStatus("Avatar upload failed.", "error");
+          setStatus(statusEl, "Avatar upload failed.", "error");
           return;
         }
       }
@@ -394,7 +540,7 @@ function colorFromNickname(nickname){
           updates.background_url = await uploadToBucket("profile-backgrounds", path, bg);
         } catch (e){
           console.warn(e);
-          setStatus("Background upload failed.", "error");
+          setStatus(statusEl, "Background upload failed.", "error");
           return;
         }
       }
@@ -404,320 +550,239 @@ function colorFromNickname(nickname){
         .eq("id", currentUser.id);
 
       if (error){
-        setStatus(error.message || "Save failed.", "error");
+        setStatus(statusEl, error.message || "Save failed.", "error");
         return;
       }
 
-      setStatus("Saved.", "ok");
-      await await refreshFriendsUI();
-
-    
-    // --- Friends & Requests ---
-    const friendsStatusEl = document.getElementById("friendsStatus");
-    const incomingList = document.getElementById("incomingList");
-    const outgoingList = document.getElementById("outgoingList");
-    const friendsList = document.getElementById("friendsList");
-    const friendSearchEl = document.getElementById("friendSearch");
-    const sendRequestBtn = document.getElementById("sendRequestBtn");
-
-    function setFriendsStatus(msg, type){
-      friendsStatusEl.className = "soft" + (type ? (" " + type) : "");
-      friendsStatusEl.textContent = msg || "";
+      setStatus(statusEl, "Saved.", "ok");
+      await loadProfile();
+      avatarFile.value = "";
+      bgFile.value = "";
     }
 
-    function mkRow(html){
-      const d = document.createElement("div");
-      d.className = "listItem";
-      d.innerHTML = html;
-      return d;
+    // FRIENDS LOGIC
+    async function findProfileByUsername(username){
+      const u = normalizeUsername(username);
+      if (!isValidUsername(u)) return { error: "Invalid username format." };
+
+      // Requires profiles SELECT policy that allows reading other users (see SQL note below).
+      const { data, error } = await sb.from("profiles")
+        .select("id, username, nickname, avatar_url")
+        .eq("username", u)
+        .maybeSingle();
+
+      if (error) return { error: error.message || "Search failed." };
+      if (!data) return { error: "No user found with that username." };
+      return { data };
     }
 
-    function friendIdFromEdge(edge, me){
-      return (edge.user_a === me) ? edge.user_b : edge.user_a;
+    async function sendFriendRequest(){
+      if (!currentUser) return;
+      setStatus(friendsStatusEl, "");
+
+      const username = friendSearch.value;
+      searchHint.textContent = "";
+
+      const res = await findProfileByUsername(username);
+      if (res.error){
+        searchHint.textContent = res.error;
+        return;
+      }
+      const other = res.data;
+
+      if (other.id === currentUser.id){
+        searchHint.textContent = "That’s you 🙂";
+        return;
+      }
+
+      setStatus(friendsStatusEl, "Sending…");
+
+      // Create request
+      const { error } = await sb.from("friend_requests").insert([{
+        from_user: currentUser.id,
+        to_user: other.id,
+        status: "pending"
+      }]);
+
+      if (error){
+        // Common cases: duplicate pending request, already friends, RLS blocked.
+        setStatus(friendsStatusEl, error.message || "Could not send request.", "error");
+        return;
+      }
+
+      setStatus(friendsStatusEl, "Request sent.", "ok");
+      friendSearch.value = "";
+      await refreshFriendsUI();
+    }
+
+    async function acceptRequest(req){
+      setStatus(friendsStatusEl, "Accepting…");
+      // 1) mark request accepted
+      const { error: upErr } = await sb.from("friend_requests")
+        .update({ status: "accepted", updated_at: new Date().toISOString() })
+        .eq("id", req.id);
+
+      if (upErr){
+        setStatus(friendsStatusEl, upErr.message || "Could not accept.", "error");
+        return;
+      }
+
+      // 2) insert friendship
+      const user_a = req.from_user;
+      const user_b = req.to_user;
+
+      const { error: frErr } = await sb.from("friendships").insert([{ user_a, user_b }]);
+      // ignore unique violation if already inserted
+      if (frErr && !String(frErr.message||"").toLowerCase().includes("duplicate")){
+        // Still okay if it already exists.
+        console.warn(frErr);
+      }
+
+      setStatus(friendsStatusEl, "Friends!", "ok");
+      await refreshFriendsUI();
+    }
+
+    async function declineRequest(req){
+      setStatus(friendsStatusEl, "Declining…");
+      const { error } = await sb.from("friend_requests")
+        .update({ status: "declined", updated_at: new Date().toISOString() })
+        .eq("id", req.id);
+
+      if (error){
+        setStatus(friendsStatusEl, error.message || "Could not decline.", "error");
+        return;
+      }
+      setStatus(friendsStatusEl, "");
+      await refreshFriendsUI();
+    }
+
+    async function cancelRequest(req){
+      setStatus(friendsStatusEl, "Cancelling…");
+      const { error } = await sb.from("friend_requests")
+        .update({ status: "cancelled", updated_at: new Date().toISOString() })
+        .eq("id", req.id);
+
+      if (error){
+        setStatus(friendsStatusEl, error.message || "Could not cancel.", "error");
+        return;
+      }
+      setStatus(friendsStatusEl, "");
+      await refreshFriendsUI();
+    }
+
+    async function unfriendUser(otherId){
+      if (!currentUser) return;
+      setStatus(friendsStatusEl, "Removing…");
+
+      // Find the friendship row that includes both IDs and delete it.
+      // We store user_low/user_high; easiest is delete where (user_low = least) AND (user_high = greatest).
+      const a = currentUser.id;
+      const b = otherId;
+      const low = (a < b) ? a : b;
+      const high = (a < b) ? b : a;
+
+      const { error } = await sb.from("friendships")
+        .delete()
+        .eq("user_low", low)
+        .eq("user_high", high);
+
+      if (error){
+        setStatus(friendsStatusEl, error.message || "Could not remove friend.", "error");
+        return;
+      }
+
+      setStatus(friendsStatusEl, "");
+      await refreshFriendsUI();
     }
 
     async function refreshFriendsUI(){
       if (!currentUser) return;
+      setStatus(friendsStatusEl, "");
 
-      // Friends
-      const { data: edges, error: edgeErr } = await sb
-        .from("friendships")
-        .select("id, user_a, user_b, created_at")
-        .or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`)
-        .order("created_at", { ascending: false });
-
-      if (edgeErr){
-        setFriendsStatus("Unable to load friends.", "error");
-      } else {
-        setFriendsStatus("");
-      }
-
-      const friendIds = (edges || []).map(e => friendIdFromEdge(e, currentUser.id));
-
-      let profilesById = {};
-      if (friendIds.length){
-        const { data: profs } = await sb
-          .from("profiles")
-          .select("id, username, nickname, avatar_url, avatar_initial, avatar_color")
-          .in("id", friendIds);
-
-        (profs || []).forEach(p => profilesById[p.id] = p);
-      }
-
-      friendsList.innerHTML = "";
-      if (!friendIds.length){
-        friendsList.appendChild(mkRow(`<span style="opacity:.75">No friends yet.</span>`));
-      } else {
-        for (const fid of friendIds){
-          const p = profilesById[fid] || {};
-          const label = esc(p.nickname || p.username || "Unknown");
-          const uname = p.username ? ("@" + esc(p.username)) : "";
-          friendsList.appendChild(mkRow(`
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-              <div style="min-width:0">
-                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                <div style="font-size:12px; opacity:.7">${uname}</div>
-              </div>
-              <button class="pill" type="button" data-unfriend="${fid}" style="border:none; cursor:pointer;">Unfriend</button>
-            </div>
-          `));
-        }
-      }
-
-      // Incoming requests
-      const { data: incoming, error: inErr } = await sb
-        .from("friend_requests")
+      // Incoming pending
+      const { data: incoming, error: inErr } = await sb.from("friend_requests")
         .select("id, from_user, to_user, status, created_at")
         .eq("to_user", currentUser.id)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      incomingList.innerHTML = "";
       if (inErr){
-        incomingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
+        renderEmpty(incomingList, "Unable to load.");
       } else if (!incoming?.length){
-        incomingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
+        renderEmpty(incomingList, "None.");
       } else {
-        const fromIds = incoming.map(r => r.from_user);
-        const { data: fromProfs } = await sb.from("profiles")
-          .select("id, username, nickname")
-          .in("id", fromIds);
-        const map = {};
-        (fromProfs||[]).forEach(p => map[p.id]=p);
-
-        for (const r of incoming){
-          const p = map[r.from_user] || {};
-          const label = esc(p.nickname || p.username || "Unknown");
-          incomingList.appendChild(mkRow(`
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-              <div style="min-width:0">
-                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
-              </div>
-              <div style="display:flex; gap:8px;">
-                <button class="pill" type="button" data-accept="${r.id}" style="border:none; cursor:pointer;">Accept</button>
-                <button class="pill" type="button" data-decline="${r.id}" style="border:none; cursor:pointer;">Decline</button>
-              </div>
-            </div>
-          `));
-        }
+        incomingList.innerHTML = "";
       }
 
-      // Outgoing requests
-      const { data: outgoing, error: outErr } = await sb
-        .from("friend_requests")
+      // Outgoing pending
+      const { data: outgoing, error: outErr } = await sb.from("friend_requests")
         .select("id, from_user, to_user, status, created_at")
         .eq("from_user", currentUser.id)
         .eq("status", "pending")
         .order("created_at", { ascending: false });
 
-      outgoingList.innerHTML = "";
       if (outErr){
-        outgoingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
+        renderEmpty(outgoingList, "Unable to load.");
       } else if (!outgoing?.length){
-        outgoingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
+        renderEmpty(outgoingList, "None.");
       } else {
-        const toIds = outgoing.map(r => r.to_user);
-        const { data: toProfs } = await sb.from("profiles")
-          .select("id, username, nickname")
-          .in("id", toIds);
-        const map = {};
-        (toProfs||[]).forEach(p => map[p.id]=p);
+        outgoingList.innerHTML = "";
+      }
 
-        for (const r of outgoing){
-          const p = map[r.to_user] || {};
-          const label = esc(p.nickname || p.username || "Unknown");
-          outgoingList.appendChild(mkRow(`
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-              <div style="min-width:0">
-                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
-              </div>
-              <button class="pill" type="button" data-cancel="${r.id}" style="border:none; cursor:pointer;">Cancel</button>
-            </div>
-          `));
+      // Friendships
+      const { data: friends, error: frErr } = await sb.from("friendships")
+        .select("user_low, user_high, created_at")
+        .or(`user_low.eq.${currentUser.id},user_high.eq.${currentUser.id}`)
+        .order("created_at", { ascending: false });
+
+      if (frErr){
+        renderEmpty(friendsList, "Unable to load.");
+      } else if (!friends?.length){
+        renderEmpty(friendsList, "No friends yet.");
+      } else {
+        friendsList.innerHTML = "";
+      }
+
+      // Collect all "other ids" to fetch profiles in one go
+      const otherIds = new Set()
+      ;(incoming||[]).forEach(r => otherIds.add(r.from_user));
+      ;(outgoing||[]).forEach(r => otherIds.add(r.to_user));
+      ;(friends||[]).forEach(f => otherIds.add(f.user_low === currentUser.id ? f.user_high : f.user_low));
+
+      let profilesById = {};
+      const ids = Array.from(otherIds);
+      if (ids.length){
+        const { data: profs, error: pErr } = await sb.from("profiles")
+          .select("id, username, nickname, avatar_url")
+          .in("id", ids);
+
+        if (!pErr && profs){
+          for (const p of profs) profilesById[p.id] = p;
         }
       }
-    }
 
-    async function sendFriendRequest(){
-      if (!currentUser) return;
-      const username = normalizeUsername(friendSearchEl.value);
-      if (!isValidUsername(username)){
-        setFriendsStatus("Enter a valid username.", "error");
-        return;
-      }
-      // Can't friend yourself
-      if (username === normalizeUsername(userText.textContent.replace(/^@/, ""))){
-        setFriendsStatus("That’s you 🙂", "error");
-        return;
+      // Render lists
+      if (incoming?.length){
+        incomingList.innerHTML = "";
+        for (const r of incoming){
+          incomingList.appendChild(renderRequestItem(r, profilesById[r.from_user], true));
+        }
       }
 
-      setFriendsStatus("Sending…");
-      // Find user by username
-      const { data: target, error: findErr } = await sb.from("profiles")
-        .select("id, username")
-        .eq("username", username)
-        .maybeSingle();
-
-      if (findErr || !target){
-        setFriendsStatus("User not found.", "error");
-        return;
-      }
-      if (target.id === currentUser.id){
-        setFriendsStatus("That’s you 🙂", "error");
-        return;
+      if (outgoing?.length){
+        outgoingList.innerHTML = "";
+        for (const r of outgoing){
+          outgoingList.appendChild(renderRequestItem(r, profilesById[r.to_user], false));
+        }
       }
 
-      // Check already friends
-      const a = currentUser.id < target.id ? currentUser.id : target.id;
-      const b = currentUser.id < target.id ? target.id : currentUser.id;
-
-      const { data: existingFriend } = await sb.from("friendships")
-        .select("id").eq("user_a", a).eq("user_b", b).maybeSingle();
-      if (existingFriend){
-        setFriendsStatus("You’re already friends.", "ok");
-        await refreshFriendsUI();
-        return;
+      if (friends?.length){
+        friendsList.innerHTML = "";
+        for (const f of friends){
+          const otherId = (f.user_low === currentUser.id) ? f.user_high : f.user_low;
+          friendsList.appendChild(renderFriendItem(profilesById[otherId], otherId));
+        }
       }
-
-      // Check existing request either direction
-      const { data: existingReq } = await sb.from("friend_requests")
-        .select("id, from_user, to_user, status")
-        .or(`and(from_user.eq.${currentUser.id},to_user.eq.${target.id}),and(from_user.eq.${target.id},to_user.eq.${currentUser.id})`)
-        .eq("status", "pending")
-        .maybeSingle();
-
-      if (existingReq){
-        setFriendsStatus("Request already pending.", "ok");
-        await refreshFriendsUI();
-        return;
-      }
-
-      const { error: insErr } = await sb.from("friend_requests").insert([{
-        from_user: currentUser.id,
-        to_user: target.id,
-        status: "pending"
-      }]);
-
-      if (insErr){
-        setFriendsStatus("Send failed: " + insErr.message, "error");
-        return;
-      }
-
-      setFriendsStatus("Request sent.", "ok");
-      friendSearchEl.value = "";
-      await refreshFriendsUI();
-    }
-
-    async function acceptRequest(reqId){
-      if (!currentUser) return;
-      setFriendsStatus("Accepting…");
-      // Fetch request to know from/to
-      const { data: req, error } = await sb.from("friend_requests")
-        .select("id, from_user, to_user, status")
-        .eq("id", reqId)
-        .maybeSingle();
-
-      if (error || !req){
-        setFriendsStatus("Unable to load request.", "error");
-        return;
-      }
-
-      const from = req.from_user;
-      const to = req.to_user;
-
-      const a = from < to ? from : to;
-      const b = from < to ? to : from;
-
-      // Create friendship edge
-      const { error: edgeErr } = await sb.from("friendships").insert([{
-        user_a: a,
-        user_b: b
-      }]);
-
-      if (edgeErr && !/duplicate key/.test(edgeErr.message || "")){
-        setFriendsStatus("Accept failed: " + edgeErr.message, "error");
-        return;
-      }
-
-      // Mark request accepted
-      const { error: upErr } = await sb.from("friend_requests")
-        .update({ status: "accepted" })
-        .eq("id", reqId);
-
-      if (upErr){
-        setFriendsStatus("Accept failed: " + upErr.message, "error");
-        return;
-      }
-
-      setFriendsStatus("Friends ✔", "ok");
-      await refreshFriendsUI();
-    }
-
-    async function declineOrCancel(reqId){
-      if (!currentUser) return;
-      const { error } = await sb.from("friend_requests")
-        .update({ status: "declined" })
-        .eq("id", reqId);
-      if (error){
-        setFriendsStatus("Update failed: " + error.message, "error");
-        return;
-      }
-      await refreshFriendsUI();
-    }
-
-    async function unfriend(friendId){
-      if (!currentUser) return;
-      const a = currentUser.id < friendId ? currentUser.id : friendId;
-      const b = currentUser.id < friendId ? friendId : currentUser.id;
-      const { error } = await sb.from("friendships").delete().eq("user_a", a).eq("user_b", b);
-      if (error){
-        setFriendsStatus("Unfriend failed: " + error.message, "error");
-        return;
-      }
-      await refreshFriendsUI();
-    }
-
-    sendRequestBtn.addEventListener("click", sendFriendRequest);
-    friendSearchEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendFriendRequest(); });
-
-    document.addEventListener("click", (e)=>{
-      const t = e.target;
-      const accept = t?.getAttribute?.("data-accept");
-      const decline = t?.getAttribute?.("data-decline");
-      const cancel = t?.getAttribute?.("data-cancel");
-      const unfr = t?.getAttribute?.("data-unfriend");
-      if (accept) acceptRequest(accept);
-      if (decline) declineOrCancel(decline);
-      if (cancel) declineOrCancel(cancel);
-      if (unfr) unfriend(unfr);
-    });
-
-
-    loadProfile();
-      avatarFile.value = "";
-      bgFile.value = "";
     }
 
     document.getElementById("saveBtn").addEventListener("click", saveChanges);
@@ -726,313 +791,15 @@ function colorFromNickname(nickname){
       window.location.href = "index.html";
     });
 
-    await refreshFriendsUI();
-
-    
-    // --- Friends & Requests ---
-    const friendsStatusEl = document.getElementById("friendsStatus");
-    const incomingList = document.getElementById("incomingList");
-    const outgoingList = document.getElementById("outgoingList");
-    const friendsList = document.getElementById("friendsList");
-    const friendSearchEl = document.getElementById("friendSearch");
-    const sendRequestBtn = document.getElementById("sendRequestBtn");
-
-    function setFriendsStatus(msg, type){
-      friendsStatusEl.className = "soft" + (type ? (" " + type) : "");
-      friendsStatusEl.textContent = msg || "";
-    }
-
-    function mkRow(html){
-      const d = document.createElement("div");
-      d.className = "listItem";
-      d.innerHTML = html;
-      return d;
-    }
-
-    function friendIdFromEdge(edge, me){
-      return (edge.user_a === me) ? edge.user_b : edge.user_a;
-    }
-
-    async function refreshFriendsUI(){
-      if (!currentUser) return;
-
-      // Friends
-      const { data: edges, error: edgeErr } = await sb
-        .from("friendships")
-        .select("id, user_a, user_b, created_at")
-        .or(`user_a.eq.${currentUser.id},user_b.eq.${currentUser.id}`)
-        .order("created_at", { ascending: false });
-
-      if (edgeErr){
-        setFriendsStatus("Unable to load friends.", "error");
-      } else {
-        setFriendsStatus("");
-      }
-
-      const friendIds = (edges || []).map(e => friendIdFromEdge(e, currentUser.id));
-
-      let profilesById = {};
-      if (friendIds.length){
-        const { data: profs } = await sb
-          .from("profiles")
-          .select("id, username, nickname, avatar_url, avatar_initial, avatar_color")
-          .in("id", friendIds);
-
-        (profs || []).forEach(p => profilesById[p.id] = p);
-      }
-
-      friendsList.innerHTML = "";
-      if (!friendIds.length){
-        friendsList.appendChild(mkRow(`<span style="opacity:.75">No friends yet.</span>`));
-      } else {
-        for (const fid of friendIds){
-          const p = profilesById[fid] || {};
-          const label = esc(p.nickname || p.username || "Unknown");
-          const uname = p.username ? ("@" + esc(p.username)) : "";
-          friendsList.appendChild(mkRow(`
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-              <div style="min-width:0">
-                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                <div style="font-size:12px; opacity:.7">${uname}</div>
-              </div>
-              <button class="pill" type="button" data-unfriend="${fid}" style="border:none; cursor:pointer;">Unfriend</button>
-            </div>
-          `));
-        }
-      }
-
-      // Incoming requests
-      const { data: incoming, error: inErr } = await sb
-        .from("friend_requests")
-        .select("id, from_user, to_user, status, created_at")
-        .eq("to_user", currentUser.id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
-
-      incomingList.innerHTML = "";
-      if (inErr){
-        incomingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
-      } else if (!incoming?.length){
-        incomingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
-      } else {
-        const fromIds = incoming.map(r => r.from_user);
-        const { data: fromProfs } = await sb.from("profiles")
-          .select("id, username, nickname")
-          .in("id", fromIds);
-        const map = {};
-        (fromProfs||[]).forEach(p => map[p.id]=p);
-
-        for (const r of incoming){
-          const p = map[r.from_user] || {};
-          const label = esc(p.nickname || p.username || "Unknown");
-          incomingList.appendChild(mkRow(`
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-              <div style="min-width:0">
-                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
-              </div>
-              <div style="display:flex; gap:8px;">
-                <button class="pill" type="button" data-accept="${r.id}" style="border:none; cursor:pointer;">Accept</button>
-                <button class="pill" type="button" data-decline="${r.id}" style="border:none; cursor:pointer;">Decline</button>
-              </div>
-            </div>
-          `));
-        }
-      }
-
-      // Outgoing requests
-      const { data: outgoing, error: outErr } = await sb
-        .from("friend_requests")
-        .select("id, from_user, to_user, status, created_at")
-        .eq("from_user", currentUser.id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
-
-      outgoingList.innerHTML = "";
-      if (outErr){
-        outgoingList.appendChild(mkRow(`<span style="opacity:.75">Load failed.</span>`));
-      } else if (!outgoing?.length){
-        outgoingList.appendChild(mkRow(`<span style="opacity:.75">None.</span>`));
-      } else {
-        const toIds = outgoing.map(r => r.to_user);
-        const { data: toProfs } = await sb.from("profiles")
-          .select("id, username, nickname")
-          .in("id", toIds);
-        const map = {};
-        (toProfs||[]).forEach(p => map[p.id]=p);
-
-        for (const r of outgoing){
-          const p = map[r.to_user] || {};
-          const label = esc(p.nickname || p.username || "Unknown");
-          outgoingList.appendChild(mkRow(`
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:center;">
-              <div style="min-width:0">
-                <div style="font-size:13px; color: rgba(245,245,245,0.90); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
-                <div style="font-size:12px; opacity:.7">@${esc(p.username||"")}</div>
-              </div>
-              <button class="pill" type="button" data-cancel="${r.id}" style="border:none; cursor:pointer;">Cancel</button>
-            </div>
-          `));
-        }
-      }
-    }
-
-    async function sendFriendRequest(){
-      if (!currentUser) return;
-      const username = normalizeUsername(friendSearchEl.value);
-      if (!isValidUsername(username)){
-        setFriendsStatus("Enter a valid username.", "error");
-        return;
-      }
-      // Can't friend yourself
-      if (username === normalizeUsername(userText.textContent.replace(/^@/, ""))){
-        setFriendsStatus("That’s you 🙂", "error");
-        return;
-      }
-
-      setFriendsStatus("Sending…");
-      // Find user by username
-      const { data: target, error: findErr } = await sb.from("profiles")
-        .select("id, username")
-        .eq("username", username)
-        .maybeSingle();
-
-      if (findErr || !target){
-        setFriendsStatus("User not found.", "error");
-        return;
-      }
-      if (target.id === currentUser.id){
-        setFriendsStatus("That’s you 🙂", "error");
-        return;
-      }
-
-      // Check already friends
-      const a = currentUser.id < target.id ? currentUser.id : target.id;
-      const b = currentUser.id < target.id ? target.id : currentUser.id;
-
-      const { data: existingFriend } = await sb.from("friendships")
-        .select("id").eq("user_a", a).eq("user_b", b).maybeSingle();
-      if (existingFriend){
-        setFriendsStatus("You’re already friends.", "ok");
-        await refreshFriendsUI();
-        return;
-      }
-
-      // Check existing request either direction
-      const { data: existingReq } = await sb.from("friend_requests")
-        .select("id, from_user, to_user, status")
-        .or(`and(from_user.eq.${currentUser.id},to_user.eq.${target.id}),and(from_user.eq.${target.id},to_user.eq.${currentUser.id})`)
-        .eq("status", "pending")
-        .maybeSingle();
-
-      if (existingReq){
-        setFriendsStatus("Request already pending.", "ok");
-        await refreshFriendsUI();
-        return;
-      }
-
-      const { error: insErr } = await sb.from("friend_requests").insert([{
-        from_user: currentUser.id,
-        to_user: target.id,
-        status: "pending"
-      }]);
-
-      if (insErr){
-        setFriendsStatus("Send failed: " + insErr.message, "error");
-        return;
-      }
-
-      setFriendsStatus("Request sent.", "ok");
-      friendSearchEl.value = "";
-      await refreshFriendsUI();
-    }
-
-    async function acceptRequest(reqId){
-      if (!currentUser) return;
-      setFriendsStatus("Accepting…");
-      // Fetch request to know from/to
-      const { data: req, error } = await sb.from("friend_requests")
-        .select("id, from_user, to_user, status")
-        .eq("id", reqId)
-        .maybeSingle();
-
-      if (error || !req){
-        setFriendsStatus("Unable to load request.", "error");
-        return;
-      }
-
-      const from = req.from_user;
-      const to = req.to_user;
-
-      const a = from < to ? from : to;
-      const b = from < to ? to : from;
-
-      // Create friendship edge
-      const { error: edgeErr } = await sb.from("friendships").insert([{
-        user_a: a,
-        user_b: b
-      }]);
-
-      if (edgeErr && !/duplicate key/.test(edgeErr.message || "")){
-        setFriendsStatus("Accept failed: " + edgeErr.message, "error");
-        return;
-      }
-
-      // Mark request accepted
-      const { error: upErr } = await sb.from("friend_requests")
-        .update({ status: "accepted" })
-        .eq("id", reqId);
-
-      if (upErr){
-        setFriendsStatus("Accept failed: " + upErr.message, "error");
-        return;
-      }
-
-      setFriendsStatus("Friends ✔", "ok");
-      await refreshFriendsUI();
-    }
-
-    async function declineOrCancel(reqId){
-      if (!currentUser) return;
-      const { error } = await sb.from("friend_requests")
-        .update({ status: "declined" })
-        .eq("id", reqId);
-      if (error){
-        setFriendsStatus("Update failed: " + error.message, "error");
-        return;
-      }
-      await refreshFriendsUI();
-    }
-
-    async function unfriend(friendId){
-      if (!currentUser) return;
-      const a = currentUser.id < friendId ? currentUser.id : friendId;
-      const b = currentUser.id < friendId ? friendId : currentUser.id;
-      const { error } = await sb.from("friendships").delete().eq("user_a", a).eq("user_b", b);
-      if (error){
-        setFriendsStatus("Unfriend failed: " + error.message, "error");
-        return;
-      }
-      await refreshFriendsUI();
-    }
-
     sendRequestBtn.addEventListener("click", sendFriendRequest);
-    friendSearchEl.addEventListener("keydown", (e)=>{ if (e.key === "Enter") sendFriendRequest(); });
-
-    document.addEventListener("click", (e)=>{
-      const t = e.target;
-      const accept = t?.getAttribute?.("data-accept");
-      const decline = t?.getAttribute?.("data-decline");
-      const cancel = t?.getAttribute?.("data-cancel");
-      const unfr = t?.getAttribute?.("data-unfriend");
-      if (accept) acceptRequest(accept);
-      if (decline) declineOrCancel(decline);
-      if (cancel) declineOrCancel(cancel);
-      if (unfr) unfriend(unfr);
+    friendSearch.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendFriendRequest();
     });
 
-
-    loadProfile();
+    (async () => {
+      await loadProfile();
+      await refreshFriendsUI();
+    })();
   </script>
 </body>
 </html>
