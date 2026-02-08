@@ -7,7 +7,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="supabase-client.js"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
@@ -283,8 +282,9 @@ function colorFromNickname(nickname){
   return `hsl(${hue} 70% 60%)`;
 }
 
-    const sb = window.sb;
-function fmtDate(ts){
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    function fmtDate(ts){
       if (!ts) return "";
       const d = new Date(ts);
       return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });

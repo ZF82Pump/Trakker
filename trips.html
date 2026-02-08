@@ -7,7 +7,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
-  <script src="supabase-client.js"></script>
 
   <style>
     :root{
@@ -172,8 +171,9 @@
   </div>
 
   <script>
-    const sb = window.sb;
-const statusEl = document.getElementById("status");
+    const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    const statusEl = document.getElementById("status");
     const gridEl = document.getElementById("grid");
     const emptyEl = document.getElementById("empty");
     const searchEl = document.getElementById("search");
