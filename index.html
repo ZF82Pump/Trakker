@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Adventure Trakker</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="supabase-client.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+
+  <style>
+    :root{
+      --text: rgba(245,245,245,0.92);
+      --muted: rgba(180,180,180,0.92);
+      --panel: rgba(255,255,255,0.10);
+      --panel-2: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.16);
+      --shadow: 0 14px 30px rgba(0,0,0,0.30);
+      --bg: #0b0b0b;
+      --danger: rgba(255,120,120,0.92);
+    }
+    html, body{
+      height: 100%;
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .bg-map{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 1;
+    }
+    .bg-map svg{
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .bg-vignette{
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse at top, rgba(255,255,255,0.05), rgba(0,0,0,0) 55%),
+        radial-gradient(ellipse at center, rgba(0,0,0,0) 50%, rgba(0,0,0,0.55) 100%);
+      opacity: 0.95;
+    }
+
+    .header, .wrap, .float, .topright{
+      position: relative;
+      z-index: 2;
+    }
+
+    .header{
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 18px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .header h1{
+      margin: 0;
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: rgba(190,190,190,0.92);
+      font-size: clamp(28px, 3vw, 46px);
+      text-shadow: 0 12px 26px rgba(0,0,0,0.40);
+    }
+
+    .topright{
+      position: fixed;
+      top: 18px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      text-decoration:none;
+      font-weight: 300;
+      font-size: 13px;
+      color: rgba(245,245,245,0.88);
+      user-select:none;
+    }
+    .pill:hover{ background: rgba(255,255,255,0.13); }
+
+    .wrap{
+      height: 100%;
+      display: grid;
+      grid-template-columns: 360px 1fr 360px;
+      gap: 14px;
+      padding: 18px 16px;
+      box-sizing: border-box;
+    }
+
+    .panel{
+      align-self: start;
+      margin-top: 74px;
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+    }
+    .panel .panel-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.06);
+    }
+    .panel .panel-title{
+      margin: 0;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      color: rgba(220,220,220,0.85);
+      font-size: 14px;
+      user-select:none;
+    }
+    .panel .panel-link{
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.75);
+      padding: 8px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.18);
+    }
+    .panel .panel-body{
+      padding: 12px 14px 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      background: var(--panel-2);
+      min-height: 120px;
+      max-height: calc(100vh - 180px);
+      overflow-y: auto;
+    }
+
+    .snippet{
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.18);
+      padding: 10px 12px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .snippet.clickable{
+      cursor: pointer;
+    }
+    .snippet:hover{
+      background: rgba(255,255,255,0.08);
+    }
+    .snippet .line1{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .snippet .name{
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.90);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
+    }
+    .snippet .date{
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.65);
+      white-space: nowrap;
+    }
+    .snippet .note{
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.70);
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .feed-badge{
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 11px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.70);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .center{
+      margin-top: 74px;
+    }
+
+    .soft{
+      font-size: 12px;
+      font-weight: 300;
+      color: rgba(245,245,245,0.60);
+    }
+    .soft.error{ color: var(--danger); }
+
+    .float{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      display:flex;
+      gap: 12px;
+      z-index: 10;
+    }
+    .btn{
+      border: none;
+      border-radius: 16px;
+      padding: 12px 16px;
+      cursor: pointer;
+      color: rgba(245,245,245,0.92);
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: var(--shadow);
+      font-weight: 300;
+      letter-spacing: 0.02em;
+      text-decoration:none;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.15); }
+
+    @media (max-width: 1060px){
+      html, body{ overflow:auto; }
+      .wrap{ grid-template-columns: 1fr; height:auto; }
+      .center{ display:none; }
+      .float{
+        position: sticky;
+        left: auto;
+        bottom: auto;
+        transform: none;
+        justify-content: center;
+        padding: 14px 0 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-map" aria-hidden="true">
+    <svg id="worldSvg"></svg>
+  </div>
+  <div class="bg-vignette" aria-hidden="true"></div>
+
+  <div class="topright">
+    <a id="authBtn" class="pill" href="signin.html">Sign in / Sign up</a>
+  </div>
+
+  <div class="header">
+    <h1>Adventure Trakker</h1>
+  </div>
+
+  <div class="wrap">
+    <aside class="panel" aria-label="News panel">
+      <div class="panel-head">
+        <h2 class="panel-title">News</h2>
+        <a class="panel-link" href="news.html">Open</a>
+      </div>
+      <div class="panel-body" id="newsList">
+        <div class="soft">Loading…</div>
+      </div>
+    </aside>
+
+    <main class="panel center" aria-label="Friends feed panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Friends feed</h2>
+        <span class="soft" id="feedStatus"></span>
+      </div>
+      <div class="panel-body" id="feedList">
+        <div class="soft">Loading…</div>
+      </div>
+    </main>
+
+    <aside class="panel" aria-label="Upcoming trips panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Upcoming trips</h2>
+        <a class="panel-link" href="trips.html">Open</a>
+      </div>
+      <div class="panel-body" id="upcomingList">
+        <div class="soft">Loading…</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="float">
+    <a class="btn" href="trips.html">View trips</a>
+    <a class="btn" href="adder.html">Add trip</a>
+  </div>
+
+  <script>
+    const sb = window.sb;
+
+    function esc(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[c]));
+    }
+
+    function fmtDate(ts){
+      if (!ts) return "";
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    function fmtTripDate(isoDate){
+      if (!isoDate) return "";
+      const d = new Date(String(isoDate) + "T00:00:00");
+      return d.toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+    }
+
+    function makeSnippet(o){
+      const el = document.createElement("div");
+      el.className = "snippet";
+      el.innerHTML = `
+        <div class="line1">
+          <div class="name">${esc(o.header)}</div>
+          <div class="date">${esc(o.date || "")}</div>
+        </div>
+        <div class="note">${esc(o.body || "")}</div>
+      `;
+      return el;
+    }
+
+    function makeFeedSnippet(o){
+      const a = document.createElement("a");
+      a.className = "snippet clickable";
+      a.href = `trip.html?id=${encodeURIComponent(o.id)}`;
+      a.innerHTML = `
+        <div class="line1">
+          <div class="name">${esc(o.trip_title || "Untitled")}</div>
+          <div class="date">${esc(o.when || "")}</div>
+        </div>
+        <div class="note">${esc(o.owner || "")}${o.note ? " • " + esc(o.note) : ""}</div>
+        <div class="feed-badge">${esc(o.visibility || "friends")}</div>
+      `;
+      return a;
+    }
+
+    async function loadNews(){
+      const list = document.getElementById("newsList");
+      list.innerHTML = "";
+
+      const { data, error } = await sb
+        .from("news")
+        .select("id, header, body, created_at")
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (error){
+        const msg = document.createElement("div");
+        msg.className = "soft error";
+        msg.textContent = "Unable to load news.";
+        list.appendChild(msg);
+        return;
+      }
+
+      const items = data || [];
+      if (!items.length){
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "No news yet.";
+        list.appendChild(msg);
+        return;
+      }
+
+      for (const n of items){
+        list.appendChild(makeSnippet({
+          header: n.header,
+          body: n.body,
+          date: fmtDate(n.created_at)
+        }));
+      }
+    }
+
+    async function loadUpcomingTrips(){
+      const list = document.getElementById("upcomingList");
+      list.innerHTML = "";
+
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user){
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "Sign in to see your upcoming trips.";
+        list.appendChild(msg);
+        return;
+      }
+
+      const isoToday = new Date().toISOString().slice(0,10);
+
+      const { data, error } = await sb
+        .from("trips")
+        .select("id, trip_title, start_date, end_date")
+        .eq("owner_id", user.id)
+        .gte("start_date", isoToday)
+        .order("start_date", { ascending: true })
+        .limit(3);
+
+      if (error){
+        const msg = document.createElement("div");
+        msg.className = "soft error";
+        msg.textContent = "Unable to load trips.";
+        list.appendChild(msg);
+        return;
+      }
+
+      const items = data || [];
+      if (!items.length){
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "No upcoming trips.";
+        list.appendChild(msg);
+        return;
+      }
+
+      for (const t of items){
+        list.appendChild(makeSnippet({
+          header: t.trip_title || "Untitled",
+          body: "",
+          date: `${fmtTripDate(t.start_date)} → ${fmtTripDate(t.end_date)}`
+        }));
+      }
+    }
+
+    async function loadFriendsFeed(){
+      const statusEl = document.getElementById("feedStatus");
+      const list = document.getElementById("feedList");
+      list.innerHTML = "";
+      statusEl.textContent = "";
+
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user){
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "Sign in to see your friends feed.";
+        list.appendChild(msg);
+        return;
+      }
+
+      // Get friendships involving the current user
+      const { data: friendships, error: frErr } = await sb
+        .from("friendships")
+        .select("user_low, user_high")
+        .or(`user_low.eq.${user.id},user_high.eq.${user.id}`);
+
+      if (frErr){
+        const msg = document.createElement("div");
+        msg.className = "soft error";
+        msg.textContent = "Unable to load feed.";
+        list.appendChild(msg);
+        return;
+      }
+
+      const friendIds = (friendships || []).map(f =>
+        f.user_low === user.id ? f.user_high : f.user_low
+      );
+
+      if (!friendIds.length){
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "No friends yet.";
+        list.appendChild(msg);
+        return;
+      }
+
+      // Pull friends-only trips from your friends, newest first
+      const { data: trips, error: tErr } = await sb
+        .from("trips")
+        .select("id, owner_id, trip_title, start_date, end_date, created_at, visibility")
+        .in("owner_id", friendIds)
+        .eq("visibility", "friends")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (tErr){
+        const msg = document.createElement("div");
+        msg.className = "soft error";
+        msg.textContent = "Unable to load feed.";
+        list.appendChild(msg);
+        return;
+      }
+
+      const items = trips || [];
+      if (!items.length){
+        const msg = document.createElement("div");
+        msg.className = "soft";
+        msg.textContent = "No friend trips yet.";
+        list.appendChild(msg);
+        return;
+      }
+
+      // Resolve owner names
+      const ownerIds = [...new Set(items.map(t => t.owner_id))];
+      let profileMap = {};
+      if (ownerIds.length){
+        const { data: profiles } = await sb
+          .from("profiles")
+          .select("id, username, nickname")
+          .in("id", ownerIds);
+
+        for (const p of (profiles || [])){
+          profileMap[p.id] = p;
+        }
+      }
+
+      for (const t of items){
+        const owner = profileMap[t.owner_id];
+        const ownerLabel = owner
+          ? `${owner.nickname || owner.username || "Friend"}${owner.username ? " @" + owner.username : ""}`
+          : "Friend";
+
+        list.appendChild(makeFeedSnippet({
+          id: t.id,
+          trip_title: t.trip_title,
+          when: fmtDate(t.created_at),
+          owner: ownerLabel,
+          note: `${fmtTripDate(t.start_date)} → ${fmtTripDate(t.end_date)}`,
+          visibility: t.visibility
+        }));
+      }
+    }
+
+    async function refreshAuthButton(){
+      const btn = document.getElementById("authBtn");
+      const { data: { user } } = await sb.auth.getUser();
+      if (user){
+        btn.textContent = "Profile";
+        btn.href = "profile.html";
+      } else {
+        btn.textContent = "Sign in / Sign up";
+        btn.href = "signin.html";
+      }
+    }
+
+    async function renderWorldBackground(){
+      const svg = d3.select("#worldSvg");
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      svg.attr("viewBox", `0 0 ${w} ${h}`).attr("preserveAspectRatio", "xMidYMid slice");
+      svg.selectAll("*").remove();
+
+      const fill = "rgba(255,255,255,0.05)";
+      const stroke = "rgba(255,255,255,0.15)";
+      const stroke2 = "rgba(255,255,255,0.10)";
+
+      const url = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+      const topo = await fetch(url).then(r => r.json());
+      const countries = topojson.feature(topo, topo.objects.countries);
+
+      const projection = d3.geoNaturalEarth1().fitSize([w, h], countries);
+      const path = d3.geoPath(projection);
+
+      svg.append("g")
+        .selectAll("path")
+        .data(countries.features)
+        .join("path")
+        .attr("d", path)
+        .attr("fill", fill)
+        .attr("stroke", stroke)
+        .attr("stroke-width", 1);
+
+      svg.append("path")
+        .datum({type:"Sphere"})
+        .attr("d", path)
+        .attr("fill", "none")
+        .attr("stroke", stroke2)
+        .attr("stroke-width", 1);
+    }
+
+    Promise.all([
+      loadNews(),
+      loadUpcomingTrips(),
+      loadFriendsFeed(),
+      refreshAuthButton(),
+      renderWorldBackground()
+    ]);
+
+    let resizeTimer = null;
+    function scheduleRender(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderWorldBackground, 160);
+    }
+    window.addEventListener("resize", scheduleRender);
+  </script>
+</body>
+</html>
